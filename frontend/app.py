@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 import joblib
 
-from backend.preprocessing import preprocess_payload
-
 # --------------------------------------------------
 # Page config
 # --------------------------------------------------
