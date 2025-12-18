@@ -1,29 +1,11 @@
-# app.py
 import streamlit as st
+import requests
 import pandas as pd
-import joblib
-import json
-from pathlib import Path
 
 st.set_page_config(page_title="LBW Risk Predictor", layout="wide")
 st.title("🤰 Low Birth Weight (LBW) Risk Assessment")
 
-# -----------------------
-# LOAD ARTIFACTS
-# -----------------------
-ARTIFACT_DIR = Path("model")
-
-@st.cache_resource
-def load_artifacts():
-    model = joblib.load(ARTIFACT_DIR / "xgb_model.pkl")
-    with open(ARTIFACT_DIR / "features.json") as f:
-        features = json.load(f)
-    background = pd.read_csv(ARTIFACT_DIR / "background.csv")
-    return model, features, background
-
-model, FEATURES, BACKGROUND = load_artifacts()
-
-st.success("✅ Model loaded successfully")
+st.markdown("Enter beneficiary details. Prediction is done securely via AI model.")
 
 # -----------------------
 # INPUT FORM
@@ -38,16 +20,24 @@ with st.form("lbw_form"):
 
     with col2:
         tobacco = st.selectbox("Consumes Tobacco?", ["No", "Yes"])
+        chew = st.selectbox("Chews Tobacco?", ["No", "Yes"])
         alcohol = st.selectbox("Consumes Alcohol?", ["No", "Yes"])
         anc = st.number_input("No. of ANCs Completed", 0, 10, 2)
 
     with col3:
         food = st.selectbox("Food Group Category", [1, 2, 3, 4, 5])
         toilet = st.selectbox("Improved Toilet?", ["Yes", "No"])
+        water = st.selectbox(
+            "Water Source",
+            ["Piped supply (home/yard/stand)",
+             "Groundwater – handpump/borewell",
+             "Protected well",
+             "Surface/Unprotected source",
+             "Delivered / other"]
+        )
         education = st.selectbox(
             "Education Level",
-            ["Illiterate", "Primary", "Upper Primary", "Secondary",
-             "Senior Secondary", "Graduate", "Graduate and Above"]
+            ["No schooling", "Primary (1–5)", "Middle (6–8)", "Secondary (9–12)", "Graduate & above"]
         )
 
     pm = st.number_input("PMMVY Installments Received", 0, 3, 0)
@@ -56,38 +46,38 @@ with st.form("lbw_form"):
     submitted = st.form_submit_button("🔍 Predict Risk")
 
 # -----------------------
-# PREDICTION
+# CALL FASTAPI
 # -----------------------
 if submitted:
-    row = {
-        "Beneficiary age": age,
+    payload = {
+        "Beneficiary_age": age,
         "measured_HB": hb,
         "BMI_PW2_Prog": bmi,
-        "consume_tobacco": 1 if tobacco == "Yes" else 0,
-        "consume_alcohol": 1 if alcohol == "Yes" else 0,
-        "No of ANCs completed": anc,
+        "consume_tobacco": tobacco,
+        "Status_of_current_chewing_of_tobacco": chew,
+        "consume_alcohol": alcohol,
+        "No_of_ANCs_completed": anc,
         "Food_Groups_Category": food,
         "toilet_type_clean": toilet,
+        "water_source_clean": water,
         "education_clean": education,
-        "PMMVY-Number of installment received": pm,
-        "JSY-Number of installment received": jsy,
+        "PMMVY_installments": pm,
+        "JSY_installments": jsy
     }
 
-    X = pd.DataFrame([row])
+    with st.spinner("Predicting risk..."):
+        # 🔴 IMPORTANT: local FastAPI URL
+        resp = requests.post("http://localhost:8000/predict", json=payload)
 
-    # Align features
-    for f in FEATURES:
-        if f not in X.columns:
-            X[f] = 0
-
-    X = X[FEATURES]
-
-    prob = model.predict_proba(X)[0, 1]
-
-    st.subheader("📊 Prediction Result")
-    st.metric("LBW Risk Probability", f"{prob:.2%}")
-
-    if prob >= 0.5:
-        st.error("⚠️ High Risk of Low Birth Weight")
+    if resp.status_code != 200:
+        st.error("Prediction failed. Check FastAPI server.")
     else:
-        st.success("✅ Lower Risk of Low Birth Weight")
+        out = resp.json()
+
+        st.subheader("📊 Prediction Result")
+        st.metric("LBW Risk Probability", out["risk_probability"])
+        st.success(out["risk_label"])
+
+        st.subheader("🔎 Key Risk Drivers")
+        shap_df = pd.DataFrame(out["top_drivers"])
+        st.bar_chart(shap_df.set_index("feature")["shap_value"])
