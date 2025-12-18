@@ -41,6 +41,15 @@ def registration_bucket(days):
 # Main preprocessing
 # -------------------------
 
+def preprocess_payload(payload, FEATURES):
+    df = pd.DataFrame([payload])
+
+    # 🔍 DEBUG – see exactly what we have
+    missing = [f for f in FEATURES if f not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns before preprocessing: {missing}")
+
+
 def preprocess_payload(payload: dict, features: list) -> pd.DataFrame:
     df = pd.DataFrame([payload])
 
