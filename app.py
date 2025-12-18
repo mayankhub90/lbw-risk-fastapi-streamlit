@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-API_URL = "http://localhost:8000/predict"  # local testing
+API_URL = "https://lbw-fastapi.onrender.com/predict" # local testing
 # API_URL = "https://<your-backend-url>/predict"  # later for cloud
 
 st.set_page_config(page_title="LBW Risk Predictor", layout="wide")
