@@ -1,284 +1,219 @@
+# frontend/app.py
 import streamlit as st
+import requests
 import pandas as pd
-import numpy as np
-import joblib
 
-from preprocessing import preprocess_payload
+API_URL = "http://localhost:8000/predict"  # local testing
+# API_URL = "https://<your-backend-url>/predict"  # later for cloud
 
-
-# --------------------------------------------------
-# Page config
-# --------------------------------------------------
-st.set_page_config(
-    page_title="LBW Risk Assessment",
-    layout="wide"
-)
-
+st.set_page_config(page_title="LBW Risk Predictor", layout="wide")
 st.title("🤰 Low Birth Weight (LBW) Risk Assessment")
 
 st.markdown(
     """
-    Enter beneficiary details below.  
-    All clinical derivations (BMI, anemia category, buckets, log transforms)  
-    are handled **automatically in the backend**.
+    Enter beneficiary details.  
+    The system will **automatically derive clinical & programmatic indicators**
+    and predict LBW risk.
     """
 )
 
-# --------------------------------------------------
-# Load model (cached)
-# --------------------------------------------------
-@st.cache_resource
-def load_model():
-    return joblib.load("artifacts/xgb_model.pkl")
+# ===============================
+# FORM
+# ===============================
+with st.form("lbw_form"):
 
-model = load_model()
+    # -------------------------
+    # Section 1: Background
+    # -------------------------
+    st.subheader("👩 Beneficiary Background")
 
-# --------------------------------------------------
-# SECTION A — Beneficiary Background
-# --------------------------------------------------
-st.header("A. Beneficiary Background")
+    col1, col2, col3 = st.columns(3)
 
-col1, col2, col3 = st.columns(3)
+    with col1:
+        age = st.number_input("Beneficiary age (years)", 15, 45, 25)
+        living_children = st.number_input("Number of living children", 0, 6, 0)
+        previous_pregnancies = st.number_input(
+            "Previous pregnancies (incl. miscarriage/abortion)",
+            min_value=living_children,
+            max_value=10,
+            value=max(living_children, 1)
+        )
 
-with col1:
-    age = st.number_input("Beneficiary Age (years)", 15, 49, 25)
+    with col2:
+        month_conception = st.selectbox(
+            "Month of conception",
+            ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        )
+        education = st.selectbox(
+            "Education level",
+            [
+                "No schooling",
+                "Primary (1–5)",
+                "Middle (6–8)",
+                "Secondary (9–12)",
+                "Graduate & above"
+            ]
+        )
 
-with col2:
-    living_children = st.number_input("Number of Living Children", 0, 6, 0)
+    with col3:
+        toilet = st.selectbox(
+            "Toilet facility",
+            [
+                "Improved toilet",
+                "Pit latrine (basic)",
+                "Unimproved / unknown",
+                "No facility / open defecation"
+            ]
+        )
+        water = st.selectbox(
+            "Main source of drinking water",
+            [
+                "Piped supply (home/yard/stand)",
+                "Groundwater – handpump/borewell",
+                "Protected well",
+                "Surface/Unprotected source",
+                "Delivered / other"
+            ]
+        )
 
-with col3:
-    pregnancy_losses = st.number_input(
-        "Miscarriages / Abortions / Stillbirths",
-        0, 6, 0
-    )
+    # -------------------------
+    # Section 2: Clinical & Anthropometry
+    # -------------------------
+    st.subheader("🩺 Clinical & Anthropometry")
 
-parity = living_children + pregnancy_losses + 1
-st.info(f"**Child order / parity (auto-derived): {parity}**")
+    col1, col2, col3 = st.columns(3)
 
-education_clean = st.selectbox(
-    "Education Level",
-    [
-        "No schooling",
-        "Primary (1–5)",
-        "Middle (6–8)",
-        "Secondary (9–12)",
-        "Graduate & above"
-    ]
-)
+    with col1:
+        hb = st.number_input("Hemoglobin (g/dL)", 4.0, 16.0, 11.0)
+        height = st.number_input("Height (cm)", 120, 200, 155)
 
-# --------------------------------------------------
-# SECTION B — Registration Dates
-# --------------------------------------------------
-st.header("B. Registration Details")
+    with col2:
+        anc_count = st.number_input("No. of ANC visits completed", 0, 10, 2)
 
-col1, col2 = st.columns(2)
+    with col3:
+        weight_pw1 = st.number_input("Weight at PW1 (kg)", 30.0, 100.0, 50.0)
+        weight_pw2 = st.number_input("Weight at PW2 (kg)", 30.0, 100.0, 52.0)
+        weight_pw3 = st.number_input("Weight at PW3 (kg)", 30.0, 100.0, 54.0)
+        weight_pw4 = st.number_input("Weight at PW4 (kg)", 30.0, 100.0, 56.0)
 
-with col1:
-    lmp_date = st.date_input("LMP Date")
+    # -------------------------
+    # Section 3: Nutrition & Behaviour
+    # -------------------------
+    st.subheader("🥗 Nutrition & Behaviour")
 
-with col2:
-    registration_date = st.date_input("Registration Date")
+    col1, col2, col3 = st.columns(3)
 
-# --------------------------------------------------
-# SECTION C — Clinical & Anthropometry
-# --------------------------------------------------
-st.header("C. Clinical & Anthropometry")
+    with col1:
+        food_group = st.selectbox("Food Group Category", [1, 2, 3, 4, 5])
+        ifa_tabs = st.number_input(
+            "IFA tablets consumed in last 1 month",
+            0, 120, 30
+        )
 
-col1, col2, col3 = st.columns(3)
+    with col2:
+        calcium_tabs = st.number_input(
+            "Calcium tablets consumed in last 1 month",
+            0, 120, 30
+        )
+        tobacco = st.selectbox("Consumes tobacco?", ["No", "Yes"])
 
-with col1:
-    hemoglobin = st.number_input("Hemoglobin (g/dL)", 4.0, 16.0, 11.0)
+    with col3:
+        chewing = st.selectbox("Chews tobacco?", ["No", "Yes"])
+        alcohol = st.selectbox("Consumes alcohol?", ["No", "Yes"])
 
-with col2:
-    height_cm = st.number_input("Height (cm)", 120.0, 190.0, 155.0)
+    # -------------------------
+    # Section 4: Program & Dates
+    # -------------------------
+    st.subheader("🏥 Program & Registration")
 
-with col3:
-    anc_completed = st.number_input("Number of ANC Visits Completed", 0, 8, 0)
+    col1, col2, col3 = st.columns(3)
 
-# Conditional weight inputs
-weight_pw1 = weight_pw2 = weight_pw3 = weight_pw4 = None
+    with col1:
+        days_lmp_to_registration = st.number_input(
+            "Days from LMP to registration",
+            0, 300, 45
+        )
 
-if anc_completed >= 1:
-    weight_pw1 = st.number_input("Weight at ANC 1 (kg)", 30.0, 120.0)
+    with col2:
+        counselling_visits = st.number_input(
+            "No. of counselling visits",
+            0, 10, 2
+        )
 
-if anc_completed >= 2:
-    weight_pw2 = st.number_input("Weight at ANC 2 (kg)", 30.0, 120.0)
+    with col3:
+        tt = st.selectbox("TT injection received in last ANC?", ["No", "Yes"])
 
-if anc_completed >= 3:
-    weight_pw3 = st.number_input("Weight at ANC 3 (kg)", 30.0, 120.0)
+    # -------------------------
+    # Section 5: Schemes & Assets
+    # -------------------------
+    st.subheader("💰 Schemes & Household Assets")
 
-if anc_completed >= 4:
-    weight_pw4 = st.number_input("Weight at ANC 4 (kg)", 30.0, 120.0)
+    col1, col2, col3 = st.columns(3)
 
-tt_injection = st.selectbox(
-    "TT Injection given in last ANC?",
-    ["Yes", "No"]
-)
+    with col1:
+        jsy = st.selectbox("Registered for JSY?", ["No", "Yes"])
+        jsy_inst = st.number_input("JSY installments received", 0, 2, 0)
 
-# --------------------------------------------------
-# SECTION D — Nutrition Intake
-# --------------------------------------------------
-st.header("D. Nutrition Intake")
+    with col2:
+        pmmvy = st.selectbox("Registered for PMMVY?", ["No", "Yes"])
+        pmmvy_inst = st.number_input("PMMVY installments received", 0, 3, 0)
 
-col1, col2, col3 = st.columns(3)
+    with col3:
+        wm = st.checkbox("Household has washing machine")
+        ac = st.checkbox("Household has AC/Cooler")
+        phone = st.checkbox("Household has mobile phone")
 
-with col1:
-    ifa_tabs = st.number_input(
-        "IFA tablets received last month",
-        0, 120, 0
-    )
+    submit = st.form_submit_button("🔍 Predict LBW Risk")
 
-with col2:
-    calcium_tabs = st.number_input(
-        "Calcium tablets consumed last month",
-        0, 120, 0
-    )
-
-with col3:
-    food_group = st.selectbox(
-        "Food Group Category",
-        [1, 2, 3, 4, 5]
-    )
-
-# --------------------------------------------------
-# SECTION E — Behavioural Factors
-# --------------------------------------------------
-st.header("E. Behavioural Factors")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    consume_tobacco = st.selectbox("Consumes Tobacco?", ["No", "Yes"])
-
-with col2:
-    chewing_tobacco = st.selectbox(
-        "Currently Chewing Tobacco?",
-        ["No", "Yes"]
-    )
-
-with col3:
-    consume_alcohol = st.selectbox("Consumes Alcohol?", ["No", "Yes"])
-
-# --------------------------------------------------
-# SECTION F — Household & Access
-# --------------------------------------------------
-st.header("F. Household & Living Conditions")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    toilet_type_clean = st.selectbox(
-        "Toilet Facility",
-        [
-            "Improved toilet",
-            "Pit latrine (basic)",
-            "Unimproved / unknown",
-            "No facility / open defecation"
-        ]
-    )
-
-with col2:
-    water_source_clean = st.selectbox(
-        "Main Drinking Water Source",
-        [
-            "Piped supply (home/yard/stand)",
-            "Groundwater – handpump/borewell",
-            "Protected well",
-            "Surface/Unprotected source",
-            "Delivered / other"
-        ]
-    )
-
-with col3:
-    social_media = st.selectbox(
-        "Exposure to Social Media",
-        ["No", "Yes"]
-    )
-
-washing_machine = st.selectbox(
-    "Washing Machine in Household?",
-    ["No", "Yes"]
-)
-
-ac_cooler = st.selectbox(
-    "Air Conditioner / Cooler in Household?",
-    ["No", "Yes"]
-)
-
-# --------------------------------------------------
-# SECTION G — Scheme Exposure
-# --------------------------------------------------
-st.header("G. Scheme Exposure")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    pmmvy_count = st.number_input(
-        "PMMVY Installments Received",
-        0, 3, 0
-    )
-
-with col2:
-    jsy_count = st.number_input(
-        "JSY Installments Received",
-        0, 2, 0
-    )
-
-jsy_registered = st.selectbox(
-    "Registered for JSY?",
-    ["Yes", "No"]
-)
-
-rajshri_registered = st.selectbox(
-    "Registered for RAJHSRI?",
-    ["Yes", "No"]
-)
-
-# --------------------------------------------------
-# PREDICTION
-# --------------------------------------------------
-st.divider()
-
-if st.button("🔍 Predict LBW Risk"):
+# ===============================
+# API CALL
+# ===============================
+if submit:
     payload = {
-        "beneficiary_age": age,
-        "parity": parity,
+        "Beneficiary age": age,
         "living_children": living_children,
-        "education_clean": education_clean,
-        "lmp_date": lmp_date,
-        "registration_date": registration_date,
-        "hemoglobin": hemoglobin,
-        "height_cm": height_cm,
+        "previous_pregnancies": previous_pregnancies,
+        "month_conception": month_conception,
+        "education_clean": education,
+        "toilet_type_clean": toilet,
+        "water_source_clean": water,
+        "measured_HB": hb,
+        "height": height,
+        "No of ANCs completed": anc_count,
         "weight_pw1": weight_pw1,
         "weight_pw2": weight_pw2,
         "weight_pw3": weight_pw3,
         "weight_pw4": weight_pw4,
-        "anc_completed": anc_completed,
-        "tt_injection": tt_injection,
-        "ifa_tabs": ifa_tabs,
-        "calcium_tabs": calcium_tabs,
-        "food_group": food_group,
-        "consume_tobacco": consume_tobacco,
-        "chewing_tobacco": chewing_tobacco,
-        "consume_alcohol": consume_alcohol,
-        "toilet_type_clean": toilet_type_clean,
-        "water_source_clean": water_source_clean,
-        "washing_machine": washing_machine,
-        "ac_cooler": ac_cooler,
-        "social_media": social_media,
-        "pmmvy_count": pmmvy_count,
-        "jsy_count": jsy_count,
-        "jsy_registered": jsy_registered,
-        "rajshri_registered": rajshri_registered
+        "Food_Groups_Category": food_group,
+        "ifa_tablets": ifa_tabs,
+        "calcium_tablets": calcium_tabs,
+        "consume_tobacco": tobacco,
+        "Status of current chewing of tobacco": chewing,
+        "consume_alcohol": alcohol,
+        "days_lmp_to_registration": days_lmp_to_registration,
+        "counselling_visits": counselling_visits,
+        "Service received during last ANC: TT Injection given": tt,
+        "Registered for cash transfer scheme: JSY": jsy,
+        "JSY-Number of installment received": jsy_inst,
+        "Registered for cash transfer scheme: RAJHSRI": pmmvy,
+        "PMMVY-Number of installment received": pmmvy_inst,
+        "has_washing_machine": wm,
+        "has_ac_cooler": ac,
+        "has_mobile": phone
     }
 
-    X = preprocess_payload(payload)
-    prob = model.predict_proba(X)[0, 1]
+    with st.spinner("Predicting LBW risk..."):
+        res = requests.post(API_URL, json=payload)
 
-    st.subheader("📊 Prediction Result")
-    st.metric("LBW Risk Probability", f"{prob:.2%}")
-
-    if prob >= 0.5:
-        st.error("⚠️ High Risk of Low Birth Weight")
+    if res.status_code != 200:
+        st.error("Prediction failed. Check backend logs.")
     else:
-        st.success("✅ Lower Risk of Low Birth Weight")
+        out = res.json()
+
+        st.success(f"LBW Risk Probability: **{out['risk_probability']:.2f}**")
+        st.info(out["risk_label"])
+
+        st.subheader("🔎 Key Risk Drivers")
+        st.bar_chart(
+            pd.DataFrame(out["top_drivers"]).set_index("feature")
+        )
