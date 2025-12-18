@@ -10,7 +10,7 @@ from preprocessing import preprocess_payload
 
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load("artifacts/xgb_model.json")
+    model = joblib.load("artifacts/xgb_model.pkl")   # ✅ FIXED
     features = json.load(open("artifacts/features.json"))
     background = pd.read_csv("artifacts/background.csv")
     return model, features, background
