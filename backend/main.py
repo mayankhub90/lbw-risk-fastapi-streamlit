@@ -1,24 +1,83 @@
 from fastapi import FastAPI
-import joblib, json
+from pydantic import BaseModel
+import joblib
 import pandas as pd
-from preprocessing import preprocess_raw_input
+import json
+from pathlib import Path
+
+from preprocessing import preprocess_payload
+
+# -----------------------------
+# Load artifacts
+# -----------------------------
+ARTIFACT_DIR = Path("backend/artifacts")
+
+model = joblib.load(ARTIFACT_DIR / "xgb_model.pkl")
+FEATURES = json.load(open(ARTIFACT_DIR / "features.json"))
+BACKGROUND = pd.read_csv(ARTIFACT_DIR / "background.csv")
 
 app = FastAPI(title="LBW Risk API")
 
-MODEL_PATH = "artifacts/xgb_model.pkl"
-FEATURES_PATH = "artifacts/features.json"
+# -----------------------------
+# Input schema
+# -----------------------------
+class LBWInput(BaseModel):
+    beneficiary_age: int
+    parity: int
+    living_children: int
+    education_clean: str
+    month_conception: int
 
-model = joblib.load(MODEL_PATH)
-FEATURES = json.load(open(FEATURES_PATH))
+    lmp_date: str
+    registration_date: str
 
+    hemoglobin: float
+    height_cm: float
+    anc_completed: int
+    tt_given: str
+
+    weight_pw1: float | None = None
+    weight_pw2: float | None = None
+    weight_pw3: float | None = None
+    weight_pw4: float | None = None
+
+    food_group: int
+    ifa_tabs: int
+    calcium_tabs: int
+
+    consume_tobacco: str
+    chewing_tobacco: str
+    consume_alcohol: str
+
+    washing_machine: str
+    ac_cooler: str
+    social_media: str
+
+    toilet_type_clean: str
+    water_source_clean: str
+
+    pmmvy_count: int
+    jsy_count: int
+    jsy_registered: str
+    raj_registered: str
+
+
+# -----------------------------
+# Prediction endpoint
+# -----------------------------
 @app.post("/predict")
-def predict(payload: dict):
-    df = preprocess_raw_input(payload)
-    X = df[FEATURES]
+def predict(input: LBWInput):
 
-    prob = model.predict_proba(X)[0, 1]
+    df = preprocess_payload(input.dict())
+
+    # 🔒 Feature alignment safeguard
+    df = df[FEATURES]
+
+    prob = model.predict_proba(df)[0, 1]
+
+    label = "High LBW Risk" if prob >= 0.5 else "Lower LBW Risk"
 
     return {
         "risk_probability": round(float(prob), 3),
-        "risk_label": "High LBW risk" if prob >= 0.5 else "Lower LBW risk"
+        "risk_label": label
     }
