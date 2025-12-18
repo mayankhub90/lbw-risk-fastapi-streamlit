@@ -1,85 +1,147 @@
-import numpy as np
 import pandas as pd
+import numpy as np
+from datetime import datetime
 
-def preprocess_raw_input(raw: dict) -> pd.DataFrame:
-    df = pd.DataFrame([raw])
+# --------------------------------------------------
+# Helper functions
+# --------------------------------------------------
 
-    # ------------------------------
-    # Hb risk bin
-    # ------------------------------
-    df["measured_HB_risk_bin"] = pd.cut(
-        df["measured_HB"],
-        bins=[-np.inf, 6, 8, 11, np.inf],
-        labels=["severe", "moderate", "mild", "normal"],
-        ordered=True
-    )
+def compute_bmi(weight, height_cm):
+    if weight is None or weight <= 0:
+        return np.nan
+    h_m = height_cm / 100.0
+    return round(weight / (h_m ** 2), 2)
 
-    # ------------------------------
-    # LMP-based calculations
-    # ------------------------------
-    df["LMPtoRegistration"] = (
-        pd.to_datetime(df["registration_date"]) -
-        pd.to_datetime(df["lmp_date"])
-    ).dt.days
 
-    df["RegistrationBucket"] = pd.cut(
-        df["LMPtoRegistration"],
-        bins=[-1, 30, 90, 180, 999],
-        labels=["<1m", "1–3m", "3–6m", ">6m"]
-    )
+def hb_risk_bin(hb):
+    if hb < 6:
+        return "severe_anaemia"
+    elif hb < 8:
+        return "moderate_anaemia"
+    elif hb < 11:
+        return "mild_anaemia"
+    else:
+        return "normal"
 
-    # ------------------------------
-    # ANC bucket
-    # ------------------------------
-    def anc_bucket(x):
-        if x == 0: return "None"
-        if x <= 2: return "Low"
-        if x <= 4: return "Medium"
-        return "Adequate"
 
-    df["ANCBucket"] = df["No of ANCs completed"].apply(anc_bucket)
+def registration_bucket(days):
+    if days <= 60:
+        return "early"
+    elif days <= 120:
+        return "mid"
+    else:
+        return "late"
 
-    # ------------------------------
-    # Counselling gap
-    # ------------------------------
-    dates = ["pc_pw1", "pc_pw2", "pc_pw3", "pc_pw4"]
-    for c in dates:
-        df[c] = pd.to_datetime(df[c], errors="coerce")
 
-    def gap(row):
-        d = row[dates].dropna().sort_values()
-        if len(d) < 2:
-            return 999
-        return (d.iloc[1] - d.iloc[0]).days
+def anc_bucket(n):
+    if n == 0:
+        return "none"
+    elif n <= 2:
+        return "low"
+    elif n <= 4:
+        return "adequate"
+    else:
+        return "high"
 
-    df["counselling_gap_days"] = df.apply(gap, axis=1)
 
-    # ------------------------------
-    # LMP → Installments
-    # ------------------------------
-    for i in [1, 2, 3]:
-        col = f"inst{i}_date"
-        df[col] = pd.to_datetime(df[col], errors="coerce")
-        df[f"LMPtoINST{i}"] = (
-            df[col] - pd.to_datetime(df["lmp_date"])
-        ).dt.days.fillna(999)
+def log1p_safe(x):
+    return np.log1p(max(0, x))
 
-    # ------------------------------
-    # Log transforms
-    # ------------------------------
-    df["No. of IFA tablets received/procured in last one month_log1p"] = np.log1p(
-        df["ifa_tabs"]
-    )
-    df["No. of calcium tablets consumed in last one month_log1p"] = np.log1p(
-        df["calcium_tabs"]
-    )
 
-    # ------------------------------
-    # Household assets score
-    # ------------------------------
-    df["Household_Assets_Score_log1p"] = np.log1p(
-        df["has_washing_machine"].astype(int) +
-        df["has_ac_cooler"].astype(int)
-    )
+# --------------------------------------------------
+# MAIN preprocessing function
+# --------------------------------------------------
 
-    return df
+def preprocess_payload(payload: dict) -> pd.DataFrame:
+    """
+    Takes raw UI payload and returns ONE ROW dataframe
+    exactly matching model feature expectations.
+    """
+
+    # -----------------------------
+    # Dates
+    # -----------------------------
+    lmp = datetime.fromisoformat(payload["lmp_date"])
+    reg = datetime.fromisoformat(payload["registration_date"])
+
+    lmp_to_reg = (reg - lmp).days
+
+    # -----------------------------
+    # ANC Installment inference
+    # -----------------------------
+    # Simple proportional inference (as agreed)
+    lmp_to_inst1 = lmp_to_reg + 30
+    lmp_to_inst2 = lmp_to_inst1 + 30
+    lmp_to_inst3 = lmp_to_inst2 + 30
+
+    # -----------------------------
+    # BMI calculation
+    # -----------------------------
+    bmi_pw1 = compute_bmi(payload["weight_pw1"], payload["height_cm"])
+    bmi_pw2 = compute_bmi(payload["weight_pw2"], payload["height_cm"])
+    bmi_pw3 = compute_bmi(payload["weight_pw3"], payload["height_cm"])
+    bmi_pw4 = compute_bmi(payload["weight_pw4"], payload["height_cm"])
+
+    # -----------------------------
+    # Household asset score
+    # -----------------------------
+    asset_score = 0
+    if payload["washing_machine"] == "Yes":
+        asset_score += 1
+    if payload["ac_cooler"] == "Yes":
+        asset_score += 1
+    if payload["social_media"] == "Yes":
+        asset_score += 2  # phone + electricity
+
+    # -----------------------------
+    # Build final row
+    # -----------------------------
+    row = {
+        "Beneficiary age": payload["beneficiary_age"],
+        "measured_HB_risk_bin": hb_risk_bin(payload["hemoglobin"]),
+        "Child order/parity": payload["parity"],
+        "Number of living child at now": payload["living_children"],
+        "MonthConception": payload["month_conception"],
+
+        "BMI_PW1_Prog": bmi_pw1,
+        "BMI_PW2_Prog": bmi_pw2,
+        "BMI_PW3_Prog": bmi_pw3,
+        "BMI_PW4_Prog": bmi_pw4,
+
+        "consume_tobacco": payload["consume_tobacco"],
+        "Status of current chewing of tobacco": payload["chewing_tobacco"],
+        "consume_alcohol": payload["consume_alcohol"],
+
+        "RegistrationBucket": registration_bucket(lmp_to_reg),
+        "counselling_gap_days": np.nan,  # no counselling dates provided
+        "ANCBucket": anc_bucket(payload["anc_completed"]),
+
+        "LMPtoINST1": lmp_to_inst1,
+        "LMPtoINST2": lmp_to_inst2,
+        "LMPtoINST3": lmp_to_inst3,
+
+        "No of ANCs completed": payload["anc_completed"],
+        "Service received during last ANC: TT Injection given": payload["tt_given"],
+
+        "No. of IFA tablets received/procured in last one month_log1p":
+            log1p_safe(payload["ifa_tabs"]),
+        "No. of calcium tablets consumed in last one month_log1p":
+            log1p_safe(payload["calcium_tabs"]),
+
+        "Food_Groups_Category": payload["food_group"],
+        "Household_Assets_Score_log1p": log1p_safe(asset_score),
+
+        "toilet_type_clean": payload["toilet_type_clean"],
+        "water_source_clean": payload["water_source_clean"],
+        "education_clean": payload["education_clean"],
+
+        "Social_Media_Category": payload["social_media"],
+
+        "Registered for cash transfer scheme: JSY": payload["jsy_registered"],
+        "Registered for cash transfer scheme: RAJHSRI": payload["raj_registered"],
+
+        "PMMVY-Number of installment received": payload["pmmvy_count"],
+        "JSY-Number of installment received": payload["jsy_count"],
+    }
+
+    return pd.DataFrame([row])
