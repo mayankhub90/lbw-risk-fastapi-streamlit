@@ -221,9 +221,6 @@ tt_label = st.selectbox(
 
 tt_given = TT_MAP[tt_label]
 
-
-tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No", "Don't Know"])
-
 valid_dates = [a["date"] for a in anc.values() if a["done"]]
 ANCBucket, counselling_gap_days = None, None
 
