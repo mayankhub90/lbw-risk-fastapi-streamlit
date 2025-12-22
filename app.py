@@ -76,8 +76,8 @@ MONTH_MAP = {
     "May", "June", "July", "August",
     "September", "October", "November", "December"
 }
-month_ui = st.selectbox("Month of Conception", list(MONTH_MAP.keys()))
-month_conception = MONTH_MAP[month_ui]
+
+month_conception = MONTH_MAP
 
 # =====================================================
 # 🤰 PREGNANCY & REGISTRATION DETAILS
