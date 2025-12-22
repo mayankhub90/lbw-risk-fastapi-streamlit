@@ -20,7 +20,7 @@ STATE_DISTRICT_MAP = {
     "Andhra Pradesh": ["Anantapur", "Chittoor", "Guntur"],
     "Bihar": ["Patna", "Gaya", "Muzaffarpur"],
     "Delhi": ["Central Delhi", "East Delhi", "New Delhi"],
-    "Karnataka": ["Bengaluru Urban", "Mysuru", "Dharwad"],
+    "Karnataka": ["Bengaluru Urban", "Mysuru", "Dharwad", "Tumkur"],
     "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
     "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur"],
     "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
@@ -54,7 +54,7 @@ with c1:
 with c2:
     height_cm = st.number_input("Height (cm)", 120.0, 200.0)
 with c3:
-    hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0)
+    hb_value = st.number_input("Measured Hb (g/dL)", 3, 18)
 
 if hb_value < 6:
     measured_HB_risk_bin = "severe_anaemia"
@@ -123,7 +123,7 @@ def anc_block(i, container):
             )
 
             if anc_dates and anc_date < anc_dates[-1]:
-                st.error("ANC dates must be chronological.")
+                st.error("❌ ANC dates must be chronological.")
                 st.stop()
 
             anc_dates.append(anc_date)
@@ -134,6 +134,12 @@ anc_block(1, col_left)
 anc_block(2, col_left)
 anc_block(3, col_right)
 anc_block(4, col_right)
+
+# 🔒 ANC 1 vs ANC 3 rule
+if anc.get(1, {}).get("done") and anc.get(3, {}).get("done"):
+    if anc[1]["date"] == anc[3]["date"]:
+        st.error("❌ ANC 1 and ANC 3 dates cannot be the same. Minimum 1-day gap required.")
+        st.stop()
 
 BMI_PW1_Prog = anc[1]["bmi"] if anc[1]["done"] else None
 BMI_PW2_Prog = anc[2]["bmi"] if anc[2]["done"] else None
@@ -191,7 +197,7 @@ food_group = st.selectbox(
 )
 
 # =====================================================
-# 🏠 SES (OPTIONAL BUT SAVED)
+# 🏠 SES
 # =====================================================
 st.header("🏠 Household & SES")
 
@@ -269,21 +275,6 @@ LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
 LMPtoINST3 = None
 
 # =====================================================
-# 📍 LOCATION (OPTIONAL)
-# =====================================================
-st.header("📍 Location (Optional)")
-
-capture_location = st.checkbox("Capture GPS coordinates")
-latitude = None
-longitude = None
-if capture_location:
-    c1, c2 = st.columns(2)
-    with c1:
-        latitude = st.number_input("Latitude", -90.0, 90.0)
-    with c2:
-        longitude = st.number_input("Longitude", -180.0, 180.0)
-
-# =====================================================
 # ✅ SUBMIT & REVIEW
 # =====================================================
 st.header("✅ Submit & Review")
@@ -295,6 +286,14 @@ if st.button("➕ Add Beneficiary Record"):
     )
 
     record = {
+        # --- identification ---
+        "Beneficiary Name": beneficiary_name,
+        "State": state,
+        "District": district,
+        "Block": block,
+        "Village": village,
+
+        # --- model variables ---
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
@@ -336,9 +335,7 @@ if st.button("➕ Add Beneficiary Record"):
         # --- metadata ---
         "form_start_time": st.session_state.form_start_time.isoformat(),
         "form_end_time": form_end_time.isoformat(),
-        "form_duration_seconds": duration_seconds,
-        "latitude": latitude,
-        "longitude": longitude
+        "form_duration_seconds": duration_seconds
     }
 
     st.success("✅ Record captured successfully")
