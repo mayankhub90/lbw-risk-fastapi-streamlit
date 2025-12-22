@@ -124,24 +124,37 @@ month_conception = st.selectbox(
 )
 
 # =====================================================
-# 🤰 PREGNANCY & REGISTRATION
+# 🤰 PREGNANCY & REGISTRATION DETAILS
 # =====================================================
 st.header("🤰 Pregnancy & Registration Details")
 
 c1, c2 = st.columns(2)
 with c1:
-    lmp_date = st.date_input("Last Menstrual Period (LMP)",
-                             value=pd.to_datetime(get_val("LMP", date.today())))
+    lmp_date = st.date_input(
+        "Last Menstrual Period (LMP)",
+        value=pd.to_datetime(get_val("LMP", date.today()))
+    )
 with c2:
-    registration_date = st.date_input("Registration Date",
-                                      value=pd.to_datetime(get_val("Registration Date", date.today())))
+    registration_date = st.date_input(
+        "Registration Date",
+        value=pd.to_datetime(get_val("Registration Date", date.today()))
+    )
 
+# ---- STRICT VALIDATIONS ----
 if lmp_date > registration_date:
     st.error("❌ LMP date cannot be later than Registration Date")
     st.stop()
 
+if lmp_date == registration_date:
+    st.error("❌ LMP date cannot be the same as Registration Date")
+    st.stop()
+
 days_gap = (registration_date - lmp_date).days
-registration_bucket = "Early" if days_gap < 84 else "Mid" if days_gap <= 168 else "Late"
+registration_bucket = (
+    "Early" if days_gap < 84
+    else "Mid" if days_gap <= 168
+    else "Late"
+)
 
 # =====================================================
 # 🏥 ANC & BMI
@@ -162,8 +175,10 @@ def anc_block(i, col):
 
         if done:
             anc_date = st.date_input(f"ANC {i} Date", key=f"anc_date_{i}")
-            anc_weight = st.number_input(f"ANC {i} Weight (kg)", 30.0, 120.0,
-                                         key=f"anc_weight_{i}")
+            anc_weight = st.number_input(
+                f"ANC {i} Weight (kg)", 30.0, 120.0,
+                key=f"anc_weight_{i}"
+            )
 
             if anc_dates and anc_date < anc_dates[-1]:
                 st.error("❌ ANC dates must be chronological")
@@ -178,6 +193,7 @@ anc_block(2, col_left)
 anc_block(3, col_right)
 anc_block(4, col_right)
 
+# ANC 1 vs ANC 3 rule
 if anc.get(1, {}).get("done") and anc.get(3, {}).get("done"):
     if anc[1]["date"] == anc[3]["date"]:
         st.error("❌ ANC 1 and ANC 3 dates must differ by at least 1 day")
@@ -211,10 +227,11 @@ if len(valid_dates) >= 2:
 st.header("🚬 Tobacco & Alcohol")
 
 consume_tobacco = st.selectbox("Consume tobacco?", ["No","Yes"])
-chewing_status = st.selectbox(
-    "Chewing tobacco status",
-    ["EVERY DAY","SOME DAYS","NOT AT ALL"]
-) if consume_tobacco == "Yes" else None
+chewing_status = (
+    st.selectbox("Chewing tobacco status",
+                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
+    if consume_tobacco == "Yes" else None
+)
 
 consume_alcohol = st.selectbox("Consume alcohol?", ["No","Yes"])
 
@@ -232,7 +249,7 @@ calcium_tabs_log1p = round(math.log1p(calcium_tabs), 4)
 food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5])
 
 # =====================================================
-# 🏠 SES & HOUSEHOLD ASSETS
+# 🏠 SES & ASSETS
 # =====================================================
 st.header("🏠 Household & SES")
 
@@ -258,8 +275,9 @@ ASSET_WEIGHTS = {
     "Electricity": 1.0, "Mattress": 0.5, "Pressure Cooker": 0.5,
     "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5, "Electric Fan": 0.75,
     "Mobile Telephone": 1.0, "Internet": 1.25, "Computer": 1.25,
-    "Refrigerator": 1.25, "Bicycle": 0.5, "Motorcycle/Scooter": 1.0,
-    "Car": 1.5, "Animal": 0.5, "Tractor": 1.25
+    "Refrigerator": 1.25, "Bicycle": 0.5,
+    "Motorcycle/Scooter": 1.0, "Car": 1.5,
+    "Animal": 0.5, "Tractor": 1.25
 }
 
 raw_asset_score = 0
@@ -331,7 +349,6 @@ if st.button("➕ Add / Update Record"):
         "water_source_clean": water_source_clean,
         "education_clean": education_clean,
         "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
-        "Social_Media_Category": "Low",
         "Registered for cash transfer scheme: JSY": jsy_reg,
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
