@@ -115,7 +115,6 @@ for i in range(1, 5):
         anc_dates.append(anc_date)
 
         bmi = round(anc_weight / (height_m ** 2), 2) if height_m else None
-
         anc[i].update({"date": anc_date, "weight": anc_weight, "bmi": bmi})
         st.caption(f"Calculated BMI (ANC {i}): {bmi}")
 
@@ -153,19 +152,16 @@ LMPtoINST2 = (anc[2]["date"] - lmp_date).days if anc[2]["done"] and lmp_date els
 LMPtoINST3 = (anc[3]["date"] - lmp_date).days if anc[3]["done"] and lmp_date else None
 
 # =====================================================
-# REMAINING VARIABLES (UI LOGIC FIXED)
+# REMAINING VARIABLES (DIGITAL LOGIC FIXED)
 # =====================================================
 st.subheader("Remaining Features (Locked)")
 
 consume_tobacco = st.selectbox("Do you consume tobacco?", ["Yes","No"])
-
-if consume_tobacco == "Yes":
-    chewing_status = st.selectbox(
-        "Status of current chewing of tobacco",
-        ["EVERY DAY","SOME DAYS","NOT AT ALL"]
-    )
-else:
-    chewing_status = None
+chewing_status = (
+    st.selectbox("Status of current chewing of tobacco",
+                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
+    if consume_tobacco == "Yes" else None
+)
 
 consume_alcohol = st.selectbox("Do you consume alcohol?", ["Yes","No"])
 
@@ -187,34 +183,49 @@ calcium_tabs = st.number_input(
 food_group = st.selectbox("Food_Groups_Category", ["Low","Medium","High"])
 
 toilet_type = st.selectbox(
-    "toilet_type_clean",
+    "Please select the Toilet Type used in your household",
     ["Improved toilet","Pit latrine (basic)",
      "Unimproved / unknown","No facility / open defecation"]
 )
 
 water_source = st.selectbox(
-    "water_source_clean",
+    "Please select the Water Source",
     ["Piped supply","Groundwater – handpump/borewell",
      "Protected well","Surface/Unprotected","Delivered / other"]
 )
 
 education = st.selectbox(
-    "education_clean",
+    "Please select the education level",
     ["No schooling","Primary (1–5)","Middle (6–8)",
      "Secondary (9–12)","Graduate & above"]
 )
 
-social_media_types = st.multiselect(
+# =========================
+# SOCIAL MEDIA (FIXED)
+# =========================
+social_media_selected = st.multiselect(
     "Type of Social Media Enrolled In",
     ["Facebook","YouTube","Instagram","WhatsApp","Other"]
 )
 
-sm_count = len(social_media_types)
-if sm_count == 0:
+other_social_media = []
+if "Other" in social_media_selected:
+    other_input = st.text_input(
+        "Please specify other social media platforms (comma-separated)"
+    )
+    if other_input:
+        other_social_media = [
+            x.strip() for x in other_input.split(",") if x.strip()
+        ]
+
+explicit_count = len([x for x in social_media_selected if x != "Other"])
+total_social_media_count = explicit_count + len(other_social_media)
+
+if total_social_media_count == 0:
     social_media_category = "None"
-elif sm_count == 1:
+elif total_social_media_count == 1:
     social_media_category = "Low"
-elif sm_count <= 3:
+elif total_social_media_count <= 3:
     social_media_category = "Medium"
 else:
     social_media_category = "High"
@@ -264,9 +275,12 @@ if st.button("➕ Add Beneficiary Record"):
         "height": height_cm,
         "LMP": lmp_date,
         "Registration Date": registration_date,
-        "Type of Social Media Enrolled In": ",".join(social_media_types),
+        "Type of Social Media Enrolled In":
+            ",".join(
+                [x for x in social_media_selected if x != "Other"] + other_social_media
+            ),
         "PMMVY Instalment Date": pmmvy_inst_date,
     }
 
-    st.success("✅ Record captured (UI logic updated, variables preserved)")
+    st.success("✅ Record captured (Social Media logic fixed)")
     st.dataframe(pd.DataFrame([record]))
