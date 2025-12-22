@@ -226,7 +226,6 @@ rajhsri_reg = st.selectbox("Registered for cash transfer scheme: RAJHSRI", ["No"
 
 inst_options = ["0", "1", "2", "NA"]
 pmmvy_inst_ui = st.selectbox("PMMVY-Number of installment received", inst_options)
-jsy_inst_ui = st.selectbox("JSY-Number of installment received", ["0", "1", "NA"])
 
 pmmvy_inst = 98 if pmmvy_inst_ui == "NA" else int(pmmvy_inst_ui)
 jsy_inst = 98 if jsy_inst_ui == "NA" else int(jsy_inst_ui)
@@ -239,6 +238,8 @@ if pmmvy_inst >= 1 and pmmvy_inst != 98:
 
 if pmmvy_inst >= 2 and pmmvy_inst != 98:
     pmmvy_inst2_date = st.date_input("PMMVY Installment 2 Date")
+
+jsy_inst_ui = st.selectbox("JSY-Number of installment received", ["0", "1", "NA"])
 
 LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date and lmp_date else None
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date and lmp_date else None
