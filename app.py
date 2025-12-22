@@ -348,13 +348,13 @@ other_social_media = []
 if "Other" in social_media_selected:
     other_input = st.text_input("Specify other social media (comma-separated)")
     if other_input:
-        other_social_media = [
-            x.strip() for x in other_input.split(",") if x.strip()
-        ]
+        other_social_media = [x.strip() for x in other_input.split(",") if x.strip()]
 
+# ---- Derive counts ----
 explicit_count = len([x for x in social_media_selected if x != "Other"])
 total_count = explicit_count + len(other_social_media)
 
+# ---- MODEL VARIABLE ----
 if total_count == 0:
     Social_Media_Category = "None"
 elif total_count == 1:
@@ -363,6 +363,11 @@ elif total_count <= 3:
     Social_Media_Category = "Medium"
 else:
     Social_Media_Category = "High"
+
+# ---- RAW DETAIL VARIABLE ----
+Type_of_Social_Media_Enrolled_In = ",".join(
+    [x for x in social_media_selected if x != "Other"] + other_social_media
+)
 
 
 # =====================================================
@@ -438,7 +443,8 @@ if st.button("➕ Add / Update Record"):
         "JSY-Number of installment received": jsy_inst,
         "height": height_cm,
         "LMP": lmp_date,
-        "Social_Media_Category":Type_of_Social_Media_Enrolled_In,
+        "Social_Media_Category": Social_Media_Category,
+        "Type of Social Media Enrolled In": Type_of_Social_Media_Enrolled_In,
         "Registration Date": registration_date,
         "PMMVY Instalment Date": pmmvy_inst1_date,
         "form_start_time": st.session_state.form_start_time.isoformat(),
