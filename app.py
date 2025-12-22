@@ -6,9 +6,9 @@ st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 st.title("📋 Beneficiary Data Entry Form (UI – Variable Locked)")
 
 # =====================================================
-# IDENTIFICATION
+# 1. IDENTIFICATION DETAILS
 # =====================================================
-st.subheader("Identification Details")
+st.header("1️⃣ Identification Details")
 
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -25,9 +25,9 @@ with c2:
     village = st.text_input("Village")
 
 # =====================================================
-# PHYSIO FEATURES
+# 2. PHYSIOLOGICAL & DEMOGRAPHIC DETAILS
 # =====================================================
-st.subheader("Physiological Details")
+st.header("2️⃣ Physiological & Demographic Details")
 
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -35,7 +35,7 @@ with c1:
 with c2:
     height_cm = st.number_input("Height (cm)", 120.0, 200.0)
 with c3:
-    hb_value = st.number_input("Measured Hb (g/dL)", 3, 18)
+    hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0)
 
 if hb_value < 6:
     measured_HB_risk_bin = "severe_anaemia"
@@ -46,50 +46,54 @@ elif hb_value < 11:
 else:
     measured_HB_risk_bin = "normal"
 
-st.info(f"Derived Hb Risk: {measured_HB_risk_bin}")
+st.caption(f"Derived Hb Risk Category: **{measured_HB_risk_bin}**")
 
 c1, c2 = st.columns(2)
 with c1:
-    parity = st.number_input("Child order/parity", 0, 10)
+    parity = st.number_input("Child order / parity", 0, 10)
 with c2:
-    living_children = st.number_input("Number of living child at now", 0, 10)
+    living_children = st.number_input("Number of living children at present", 0, 10)
 
 month_conception = st.selectbox(
-    "MonthConception",
+    "Month of Conception",
     ["January","February","March","April","May","June",
      "July","August","September","October","November","December"]
 )
 
 # =====================================================
-# PREGNANCY DATES
+# 3. PREGNANCY & REGISTRATION DETAILS
 # =====================================================
-st.subheader("Pregnancy Dates")
+st.header("3️⃣ Pregnancy & Registration Details")
 
 c1, c2 = st.columns(2)
 with c1:
-    lmp_date = st.date_input("LMP")
+    lmp_date = st.date_input("Last Menstrual Period (LMP)")
 with c2:
     registration_date = st.date_input("Registration Date")
 
 registration_bucket = None
 if lmp_date and registration_date:
-    gap = (registration_date - lmp_date).days
+    days_gap = (registration_date - lmp_date).days
     registration_bucket = (
-        "Early" if gap < 84 else "Mid" if gap <= 168 else "Late"
+        "Early" if days_gap < 84 else
+        "Mid" if days_gap <= 168 else
+        "Late"
     )
 
+st.caption(f"Registration Timing Category: **{registration_bucket}**")
+
 # =====================================================
-# ANC DETAILS (BASED ON NUMBER OF ANCs)
+# 4. ANC & ANTHROPOMETRY (BMI)
 # =====================================================
-st.subheader("ANC Details")
+st.header("4️⃣ ANC & Anthropometry (BMI)")
 
 height_m = height_cm / 100 if height_cm else None
 anc, anc_dates = {}, []
 
 for i in range(1, 5):
-    st.markdown(f"### ANC {i}")
-    done = st.checkbox(f"ANC {i} Completed", key=f"anc_done_{i}")
+    st.subheader(f"ANC {i}")
 
+    done = st.checkbox(f"ANC {i} Completed", key=f"anc_done_{i}")
     anc[i] = {"done": done, "date": None, "weight": None, "bmi": None}
 
     if done:
@@ -98,11 +102,13 @@ for i in range(1, 5):
             anc_date = st.date_input(f"ANC {i} Date", key=f"anc_date_{i}")
         with c2:
             anc_weight = st.number_input(
-                f"ANC {i} Weight (kg)", 30.0, 120.0, key=f"anc_weight_{i}"
+                f"ANC {i} Weight (kg)",
+                30.0, 120.0,
+                key=f"anc_weight_{i}"
             )
 
         if anc_dates and anc_date < anc_dates[-1]:
-            st.error(f"ANC {i} date cannot be earlier than previous ANC")
+            st.error("ANC dates must be chronological.")
             st.stop()
 
         anc_dates.append(anc_date)
@@ -110,7 +116,8 @@ for i in range(1, 5):
         bmi = round(anc_weight / (height_m ** 2), 2) if height_m else None
         anc[i].update({"date": anc_date, "weight": anc_weight, "bmi": bmi})
 
-# BMI variables (backend-safe)
+        st.caption(f"Calculated BMI: **{bmi}**")
+
 BMI_PW1_Prog = anc[1]["bmi"] if anc[1]["done"] else None
 BMI_PW2_Prog = anc[2]["bmi"] if anc[2]["done"] else None
 BMI_PW3_Prog = anc[3]["bmi"] if anc[3]["done"] else None
@@ -118,75 +125,91 @@ BMI_PW4_Prog = anc[4]["bmi"] if anc[4]["done"] else None
 
 anc_completed = sum(1 for a in anc.values() if a["done"])
 
-# ANC timing derivations
-ANCBucket = None
-counselling_gap_days = None
+ANCBucket, counselling_gap_days = None, None
+valid_dates = [a["date"] for a in anc.values() if a["done"] and a["date"]]
 
-valid_anc_dates = [a["date"] for a in anc.values() if a["done"] and a["date"]]
-if valid_anc_dates:
-    first_anc = min(valid_anc_dates)
+if valid_dates:
+    first_anc = min(valid_dates)
     gap = (first_anc - lmp_date).days
     ANCBucket = "Early" if gap < 84 else "Mid" if gap <= 168 else "Late"
 
-if len(valid_anc_dates) >= 2:
-    valid_anc_dates.sort()
-    counselling_gap_days = (valid_anc_dates[1] - valid_anc_dates[0]).days
+if len(valid_dates) >= 2:
+    valid_dates.sort()
+    counselling_gap_days = (valid_dates[1] - valid_dates[0]).days
 
 # =====================================================
-# TOBACCO / ALCOHOL
+# 5. TOBACCO & ALCOHOL
 # =====================================================
-consume_tobacco = st.selectbox("Do you consume tobacco?", ["Yes","No"])
+st.header("5️⃣ Tobacco & Alcohol Use")
+
+consume_tobacco = st.selectbox("Do you consume tobacco?", ["Yes", "No"])
 chewing_status = (
-    st.selectbox("Status of current chewing of tobacco",
-                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
-    if consume_tobacco == "Yes" else None
+    st.selectbox(
+        "Status of current chewing of tobacco",
+        ["EVERY DAY", "SOME DAYS", "NOT AT ALL"]
+    ) if consume_tobacco == "Yes" else None
 )
 
-consume_alcohol = st.selectbox("Do you consume alcohol?", ["Yes","No"])
+consume_alcohol = st.selectbox("Do you consume alcohol?", ["Yes", "No"])
 
 # =====================================================
-# NUTRITION
+# 6. NUTRITION
 # =====================================================
+st.header("6️⃣ Nutrition")
+
 ifa_tabs = st.number_input(
-    "No. of IFA tablets received/procured in last one month", min_value=0
+    "No. of IFA tablets received/procured in last one month",
+    min_value=0
 )
+
 calcium_tabs = st.number_input(
-    "No. of calcium tablets consumed in last one month", min_value=0
+    "No. of calcium tablets consumed in last one month",
+    min_value=0
 )
-food_group = st.selectbox("Food_Groups_Category", ["Low","Medium","High"])
+
+food_group = st.selectbox(
+    "Food Groups Consumption Category",
+    ["Low", "Medium", "High"]
+)
 
 # =====================================================
-# SES
+# 7. SOCIO-ECONOMIC STATUS (SES)
 # =====================================================
+st.header("7️⃣ Socio-Economic Status (SES)")
+
 toilet_type = st.selectbox(
-    "Toilet Type",
+    "Type of Toilet Facility",
     ["Improved toilet","Pit latrine (basic)",
      "Unimproved / unknown","No facility / open defecation"]
 )
 
 water_source = st.selectbox(
-    "Water Source",
+    "Primary Drinking Water Source",
     ["Piped supply","Groundwater – handpump/borewell",
      "Protected well","Surface/Unprotected","Delivered / other"]
 )
 
 education = st.selectbox(
-    "Education Level",
+    "Highest Education Level",
     ["No schooling","Primary (1–5)","Middle (6–8)",
      "Secondary (9–12)","Graduate & above"]
 )
 
 # =====================================================
-# DIGITAL
+# 8. DIGITAL ACCESS
 # =====================================================
+st.header("8️⃣ Digital Access")
+
 social_media_selected = st.multiselect(
-    "Type of Social Media Enrolled In",
+    "Social Media Platforms Used",
     ["Facebook","YouTube","Instagram","WhatsApp","Other"]
 )
 
 other_social_media = []
 if "Other" in social_media_selected:
-    other_input = st.text_input("Specify other social media (comma-separated)")
+    other_input = st.text_input(
+        "Specify other social media platforms (comma-separated)"
+    )
     if other_input:
         other_social_media = [x.strip() for x in other_input.split(",") if x.strip()]
 
@@ -203,23 +226,36 @@ else:
     social_media_category = "High"
 
 # =====================================================
-# PROGRAM FEATURES
+# 9. PROGRAM PARTICIPATION (PMMVY & JSY)
 # =====================================================
+st.header("9️⃣ Program Participation")
+
 tt_given = st.selectbox(
-    "Service received during last ANC: TT Injection given", ["Yes","No"]
+    "Service received during last ANC: TT Injection given",
+    ["Yes", "No"]
 )
 
-jsy_reg = st.selectbox("Registered for cash transfer scheme: JSY", ["Yes","No"])
-rajhsri_reg = st.selectbox("Registered for cash transfer scheme: RAJHSRI", ["Yes","No"])
+jsy_reg = st.selectbox(
+    "Registered for cash transfer scheme: JSY",
+    ["Yes", "No"]
+)
 
-pmmvy_inst = st.selectbox("PMMVY-Number of installment received", [0,1,2,98])
-jsy_inst = st.selectbox("JSY-Number of installment received", [0,1,98])
+rajhsri_reg = st.selectbox(
+    "Registered for cash transfer scheme: RAJHSRI",
+    ["Yes", "No"]
+)
 
-pmmvy_inst1_date = None
-pmmvy_inst2_date = None
+# ---- PMMVY ----
+pmmvy_inst = st.selectbox(
+    "PMMVY-Number of installment received",
+    [0, 1, 2, 98]
+)
+
+pmmvy_inst1_date, pmmvy_inst2_date = None, None
 
 if pmmvy_inst >= 1:
     pmmvy_inst1_date = st.date_input("PMMVY Installment 1 Date")
+
 if pmmvy_inst >= 2:
     pmmvy_inst2_date = st.date_input("PMMVY Installment 2 Date")
 
@@ -227,9 +263,17 @@ LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date and lmp_date
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date and lmp_date else None
 LMPtoINST3 = None
 
+# ---- JSY ----
+jsy_inst = st.selectbox(
+    "JSY-Number of installment received",
+    [0, 1, 98]
+)
+
 # =====================================================
-# FINAL RECORD (CANONICAL)
+# 10. SUBMIT & REVIEW
 # =====================================================
+st.header("🔟 Submit & Review")
+
 if st.button("➕ Add Beneficiary Record"):
     record = {
         "Beneficiary age": beneficiary_age,
