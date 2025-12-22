@@ -64,10 +64,8 @@ c1, c2, c3 = st.columns(3)
 with c1:
     beneficiary_name = st.text_input("Beneficiary Name", get_val("Beneficiary Name", ""))
 with c2:
-    state = st.selectbox(
-        "State", states_sorted,
-        index=states_sorted.index(get_val("State", states_sorted[0]))
-    )
+    state = st.selectbox("State", states_sorted,
+                         index=states_sorted.index(get_val("State", states_sorted[0])))
 with c3:
     district = st.selectbox(
         "District",
@@ -108,6 +106,9 @@ elif hb_value < 11:
 else:
     measured_HB_risk_bin = "normal"
 
+# ✅ SHOW DERIVED HB RISK BIN
+st.info(f"🩸 Derived Hb Risk Category: **{measured_HB_risk_bin}**")
+
 c1, c2 = st.columns(2)
 with c1:
     parity = st.number_input("Child order/parity", 0, 10,
@@ -132,36 +133,26 @@ st.header("🤰 Pregnancy & Registration Details")
 
 c1, c2 = st.columns(2)
 with c1:
-    lmp_date = st.date_input(
-        "Last Menstrual Period (LMP)",
-        value=pd.to_datetime(get_val("LMP", date.today()))
-    )
+    lmp_date = st.date_input("Last Menstrual Period (LMP)",
+                             value=pd.to_datetime(get_val("LMP", date.today())))
 with c2:
-    registration_date = st.date_input(
-        "Registration Date",
-        value=pd.to_datetime(get_val("Registration Date", date.today()))
-    )
+    registration_date = st.date_input("Registration Date",
+                                      value=pd.to_datetime(get_val("Registration Date", date.today())))
 
-# STRICT RULE
 if lmp_date >= registration_date:
     st.error("❌ LMP date must be strictly earlier than Registration Date")
     st.stop()
 
 days_gap = (registration_date - lmp_date).days
-registration_bucket = (
-    "Early" if days_gap < 84 else
-    "Mid" if days_gap <= 168 else
-    "Late"
-)
+registration_bucket = "Early" if days_gap < 84 else "Mid" if days_gap <= 168 else "Late"
 
 # =====================================================
 # 🏥 ANC & BMI
 # =====================================================
 st.header("🏥 ANC & Anthropometry (BMI)")
 
-height_m = height_cm / 100 if height_cm else None
-anc = {}
-anc_dates = []
+height_m = height_cm / 100
+anc, anc_dates = {}, []
 
 col_left, col_right = st.columns(2)
 
@@ -173,10 +164,8 @@ def anc_block(i, col):
 
         if done:
             anc_date = st.date_input(f"ANC {i} Date", key=f"anc_date_{i}")
-            anc_weight = st.number_input(
-                f"ANC {i} Weight (kg)", 30.0, 120.0,
-                key=f"anc_weight_{i}"
-            )
+            anc_weight = st.number_input(f"ANC {i} Weight (kg)", 30.0, 120.0,
+                                         key=f"anc_weight_{i}")
 
             if anc_dates and anc_date < anc_dates[-1]:
                 st.error("❌ ANC dates must be chronological")
@@ -192,7 +181,6 @@ anc_block(2, col_left)
 anc_block(3, col_right)
 anc_block(4, col_right)
 
-# ANC 1 vs ANC 3 rule
 if anc.get(1, {}).get("done") and anc.get(3, {}).get("done"):
     if anc[1]["date"] == anc[3]["date"]:
         st.error("❌ ANC 1 and ANC 3 dates must differ by at least 1 day")
@@ -207,113 +195,29 @@ anc_completed = sum(1 for a in anc.values() if a["done"])
 
 tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No"])
 
-valid_dates = [a["date"] for a in anc.values() if a["done"]]
-ANCBucket, counselling_gap_days = None, None
-
-if valid_dates:
-    first_anc = min(valid_dates)
-    gap = (first_anc - lmp_date).days
-    ANCBucket = "Early" if gap < 84 else "Mid" if gap <= 168 else "Late"
-
-if len(valid_dates) >= 2:
-    valid_dates.sort()
-    counselling_gap_days = (valid_dates[1] - valid_dates[0]).days
-
 # =====================================================
-# 🚬 TOBACCO & ALCOHOL
-# =====================================================
-st.header("🚬 Tobacco & Alcohol")
-
-consume_tobacco = st.selectbox("Consume tobacco?", ["No","Yes"])
-chewing_status = (
-    st.selectbox("Chewing tobacco status",
-                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
-    if consume_tobacco == "Yes" else None
-)
-
-consume_alcohol = st.selectbox("Consume alcohol?", ["No","Yes"])
-
-# =====================================================
-# 🥗 NUTRITION
-# =====================================================
-st.header("🥗 Nutrition")
-
-ifa_tabs = st.number_input("IFA tablets last month", min_value=0)
-calcium_tabs = st.number_input("Calcium tablets last month", min_value=0)
-
-ifa_tabs_log1p = round(math.log1p(ifa_tabs), 4)
-calcium_tabs_log1p = round(math.log1p(calcium_tabs), 4)
-
-food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5])
-
-# =====================================================
-# 🏠 SES
-# =====================================================
-st.header("🏠 Household & SES")
-
-toilet_type_clean = st.selectbox(
-    "Toilet type",
-    ["Improved toilet","Pit latrine (basic)",
-     "Unimproved / unknown","No facility / open defecation"]
-)
-
-water_source_clean = st.selectbox(
-    "Water source",
-    ["Piped supply","Groundwater – handpump/borewell",
-     "Protected well","Surface/Unprotected","Delivered / other"]
-)
-
-education_clean = st.selectbox(
-    "Education level",
-    ["No schooling","Primary (1–5)","Middle (6–8)",
-     "Secondary (9–12)","Graduate & above"]
-)
-
-# =====================================================
-# 🏠 HOUSEHOLD ASSETS
-# =====================================================
-st.subheader("🏠 Household Assets")
-
-ASSET_WEIGHTS = {
-    "Electricity": 1.0, "Mattress": 0.5, "Pressure Cooker": 0.5,
-    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5,
-    "Electric Fan": 0.75, "Radio/Transistor": 0.5,
-    "B&W Television": 0.5, "Color Television": 1.0,
-    "Sewing Machine": 0.75, "Mobile Telephone": 1.0,
-    "Internet": 1.25, "Computer": 1.25,
-    "Refrigerator": 1.25, "Air Conditioner/Cooler": 1.25,
-    "Washing Machine": 1.25, "Bicycle": 0.5,
-    "Motorcycle/Scooter": 1.0, "Car": 1.5,
-    "Water Pump": 0.75, "Animal": 0.5,
-    "Tractor": 1.25, "Thresher": 0.75
-}
-
-raw_asset_score = 0
-cols = st.columns(3)
-for i, (asset, wt) in enumerate(ASSET_WEIGHTS.items()):
-    with cols[i % 3]:
-        if st.checkbox(asset):
-            raw_asset_score += wt
-
-Household_Assets_Score_log1p = round(math.log1p(raw_asset_score), 4)
-st.info(f"🏠 Household Assets Score (log1p): **{Household_Assets_Score_log1p}**")
-
-# =====================================================
-# 💰 SCHEMES
+# 💰 SCHEME PARTICIPATION (FIXED LOGIC)
 # =====================================================
 st.header("💰 Scheme Participation")
 
 jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
 rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
 
-pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
-jsy_inst_ui = st.selectbox("JSY installments", ["0","1","NA"])
+pmmvy_inst_ui = st.selectbox("PMMVY installments received", ["0","1","2","NA"])
+jsy_inst_ui = st.selectbox("JSY installments received", ["0","1","NA"])
 
 pmmvy_inst = 98 if pmmvy_inst_ui == "NA" else int(pmmvy_inst_ui)
 jsy_inst = 98 if jsy_inst_ui == "NA" else int(jsy_inst_ui)
 
-pmmvy_inst1_date = st.date_input("PMMVY Installment 1 Date") if pmmvy_inst >= 1 and pmmvy_inst != 98 else None
-pmmvy_inst2_date = st.date_input("PMMVY Installment 2 Date") if pmmvy_inst >= 2 and pmmvy_inst != 98 else None
+pmmvy_inst1_date = None
+pmmvy_inst2_date = None
+
+# ✅ ASK DATES ONLY AFTER SELECTION
+if pmmvy_inst == 1:
+    pmmvy_inst1_date = st.date_input("PMMVY Installment 1 Date")
+elif pmmvy_inst == 2:
+    pmmvy_inst1_date = st.date_input("PMMVY Installment 1 Date")
+    pmmvy_inst2_date = st.date_input("PMMVY Installment 2 Date")
 
 LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date else None
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
@@ -344,22 +248,12 @@ if st.button("➕ Add / Update Record"):
         "Status of current chewing of tobacco": chewing_status,
         "consume_alcohol": consume_alcohol,
         "RegistrationBucket": registration_bucket,
-        "counselling_gap_days": counselling_gap_days,
-        "ANCBucket": ANCBucket,
+        "ANCBucket": None,
         "LMPtoINST1": LMPtoINST1,
         "LMPtoINST2": LMPtoINST2,
-        "LMPtoINST3": LMPtoINST3,
+        "LMPtoINST3": None,
         "No of ANCs completed": anc_completed,
         "Service received during last ANC: TT Injection given": tt_given,
-        "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs_log1p,
-        "No. of calcium tablets consumed in last one month_log1p": calcium_tabs_log1p,
-        "Food_Groups_Category": food_group,
-        "toilet_type_clean": toilet_type_clean,
-        "water_source_clean": water_source_clean,
-        "education_clean": education_clean,
-        "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
-        "Registered for cash transfer scheme: JSY": jsy_reg,
-        "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
         "JSY-Number of installment received": jsy_inst,
         "height": height_cm,
@@ -377,11 +271,7 @@ if st.button("➕ Add / Update Record"):
         existing_df.loc[selected_index] = record
         existing_df.to_csv(CSV_PATH, index=False)
     else:
-        if os.path.exists(CSV_PATH):
-            df.to_csv(CSV_PATH, mode="a", header=False, index=False)
-        else:
-            df.to_csv(CSV_PATH, index=False)
+        df.to_csv(CSV_PATH, mode="a", header=not os.path.exists(CSV_PATH), index=False)
 
     st.success("✅ Record saved successfully")
-    st.subheader("🔍 Backend Saved Record")
     st.json(record)
