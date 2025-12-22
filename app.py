@@ -67,7 +67,7 @@ with c1:
 with c2:
     height = st.number_input("Height (cm)", 120, 200)
 with c3:
-    hb_level = st.number_input("Measured Hb (g/dL)", 3.0, 18.0)
+    hb_level = st.number_input("Measured Hb (g/dL)", 3, 22)
 
 # Derived Hb risk
 if hb_level < 6:
