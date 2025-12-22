@@ -273,11 +273,11 @@ education_clean = st.selectbox(
 
 ASSET_WEIGHTS = {
     "Electricity": 1.0, "Mattress": 0.5, "Pressure Cooker": 0.5,
-    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5, "Electric Fan": 0.75,
+    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5, "Electric Fan": 0.75, "Radio/Transistor":0.5, "B&W Television":0.5, "Color Television":1.0, "Sewing Machine":0.75, 
     "Mobile Telephone": 1.0, "Internet": 1.25, "Computer": 1.25,
-    "Refrigerator": 1.25, "Bicycle": 0.5,
-    "Motorcycle/Scooter": 1.0, "Car": 1.5,
-    "Animal": 0.5, "Tractor": 1.25
+    "Refrigerator": 1.25, "Air Conditioner/Cooler":1.25, "Washing Machine":1.25, "Bicycle": 0.5,
+    "Motorcycle/Scooter": 1.0, "Car": 1.5, "Water Pump":0.75, 
+    "Animal": 0.5, "Tractor": 1.25, "Thresher":0.75
 }
 
 raw_asset_score = 0
