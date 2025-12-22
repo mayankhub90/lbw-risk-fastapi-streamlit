@@ -206,7 +206,23 @@ BMI_PW4_Prog = anc[4]["bmi"] if anc[4]["done"] else None
 
 anc_completed = sum(1 for a in anc.values() if a["done"])
 
-tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No"])
+#TT Injection 
+
+TT_MAP = {
+    "Yes": 1,
+    "No": 0,
+    "Don't Know": 9999
+}
+
+tt_label = st.selectbox(
+    "TT Injection given in last ANC",
+    options=list(TT_MAP.keys())
+)
+
+tt_given = TT_MAP[tt_label]
+
+
+tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No", "Don't Know"])
 
 valid_dates = [a["date"] for a in anc.values() if a["done"]]
 ANCBucket, counselling_gap_days = None, None
