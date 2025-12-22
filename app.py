@@ -37,7 +37,6 @@ with c2:
 with c3:
     hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0)
 
-# Hb risk bin (derived)
 if hb_value < 6:
     measured_HB_risk_bin = "severe_anaemia"
 elif hb_value < 8:
@@ -72,7 +71,6 @@ with c1:
 with c2:
     registration_date = st.date_input("Registration Date")
 
-# Registration bucket (derived)
 registration_bucket = None
 if lmp_date and registration_date:
     gap = (registration_date - lmp_date).days
@@ -99,12 +97,7 @@ for i in range(1, 5):
     st.markdown(f"### ANC {i}")
     done = st.checkbox(f"ANC {i} Done", key=f"anc_done_{i}")
 
-    anc[i] = {
-        "done": done,
-        "date": None,
-        "weight": None,
-        "bmi": None
-    }
+    anc[i] = {"done": done, "date": None, "weight": None, "bmi": None}
 
     if done:
         c1, c2 = st.columns(2)
@@ -115,38 +108,26 @@ for i in range(1, 5):
                 f"ANC {i} Weight (kg)", 30.0, 120.0, key=f"anc_weight_{i}"
             )
 
-        # chronological validation
         if anc_dates and anc_date < anc_dates[-1]:
             st.error(f"ANC {i} date cannot be earlier than previous ANC")
             st.stop()
 
         anc_dates.append(anc_date)
 
-        bmi = None
-        if height_m and anc_weight:
-            bmi = round(anc_weight / (height_m ** 2), 2)
+        bmi = round(anc_weight / (height_m ** 2), 2) if height_m else None
 
-        anc[i].update({
-            "date": anc_date,
-            "weight": anc_weight,
-            "bmi": bmi
-        })
-
+        anc[i].update({"date": anc_date, "weight": anc_weight, "bmi": bmi})
         st.caption(f"Calculated BMI (ANC {i}): {bmi}")
 
-# =====================================================
-# BMI VARIABLES (BACKEND NAMES PRESERVED)
-# =====================================================
 BMI_PW1_Prog = anc[1]["bmi"] if anc[1]["done"] else None
 BMI_PW2_Prog = anc[2]["bmi"] if anc[2]["done"] else None
 BMI_PW3_Prog = anc[3]["bmi"] if anc[3]["done"] else None
 BMI_PW4_Prog = anc[4]["bmi"] if anc[4]["done"] else None
 
-# ANC count
 anc_completed = sum(1 for i in anc.values() if i["done"])
 
 # =====================================================
-# ANC TIMING DERIVATIONS (PRESERVED)
+# ANC TIMING DERIVATIONS
 # =====================================================
 ANCBucket = None
 counselling_gap_days = None
@@ -167,22 +148,26 @@ if len(valid_anc_dates) >= 2:
     valid_anc_dates.sort()
     counselling_gap_days = (valid_anc_dates[1] - valid_anc_dates[0]).days
 
-# LMP to INST variables
 LMPtoINST1 = (anc[1]["date"] - lmp_date).days if anc[1]["done"] and lmp_date else None
 LMPtoINST2 = (anc[2]["date"] - lmp_date).days if anc[2]["done"] and lmp_date else None
 LMPtoINST3 = (anc[3]["date"] - lmp_date).days if anc[3]["done"] and lmp_date else None
 
 # =====================================================
-# REMAINING VARIABLES (UNCHANGED UI)
+# REMAINING VARIABLES (UI LOGIC FIXED)
 # =====================================================
 st.subheader("Remaining Features (Locked)")
 
 consume_tobacco = st.selectbox("Do you consume tobacco?", ["Yes","No"])
-chewing_status = st.selectbox(
-    "Status of current chewing of tobacco",
-    ["EVERY DAY","SOME DAYS","NOT AT ALL"]
-)
-consume_alcohol = st.selectbox("Do you consume alocohol?", ["Yes","No"])
+
+if consume_tobacco == "Yes":
+    chewing_status = st.selectbox(
+        "Status of current chewing of tobacco",
+        ["EVERY DAY","SOME DAYS","NOT AT ALL"]
+    )
+else:
+    chewing_status = None
+
+consume_alcohol = st.selectbox("Do you consume alcohol?", ["Yes","No"])
 
 tt_given = st.selectbox(
     "Service received during last ANC: TT Injection given",
@@ -190,10 +175,13 @@ tt_given = st.selectbox(
 )
 
 ifa_tabs = st.number_input(
-    "No. of IFA tablets received/procured in last one month_log1p"
+    "No. of IFA tablets received/procured in last one month",
+    min_value=0
 )
+
 calcium_tabs = st.number_input(
-    "No. of calcium tablets consumed in last one month_log1p"
+    "No. of calcium tablets consumed in last one month",
+    min_value=0
 )
 
 food_group = st.selectbox("Food_Groups_Category", ["Low","Medium","High"])
@@ -238,7 +226,7 @@ jsy_inst = st.selectbox("JSY-Number of installment received", [0,1,98])
 pmmvy_inst_date = st.date_input("PMMVY Instalment Date")
 
 # =====================================================
-# FINAL RECORD (ALL VARIABLES PRESENT)
+# FINAL RECORD
 # =====================================================
 if st.button("➕ Add Beneficiary Record"):
     record = {
@@ -280,5 +268,5 @@ if st.button("➕ Add Beneficiary Record"):
         "PMMVY Instalment Date": pmmvy_inst_date,
     }
 
-    st.success("✅ Record captured (all variables retained)")
+    st.success("✅ Record captured (UI logic updated, variables preserved)")
     st.dataframe(pd.DataFrame([record]))
