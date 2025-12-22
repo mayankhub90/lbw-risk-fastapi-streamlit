@@ -4,11 +4,35 @@ from datetime import date
 
 st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 
-st.title("📋 Beneficiary Data Entry Form")
+st.title("📋 Beneficiary Data Entry Form (UI Only)")
 
-# ---------------------------
+# ===============================
+# IDENTIFICATION DETAILS
+# ===============================
+st.subheader("Identification Details")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    beneficiary_name = st.text_input("Beneficiary Name")
+
+with col2:
+    state = st.text_input("State")
+
+with col3:
+    district = st.text_input("District")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    block = st.text_input("Block")
+
+with col2:
+    village = st.text_input("Village")
+
+# ===============================
 # BASIC DETAILS
-# ---------------------------
+# ===============================
 st.subheader("Basic Beneficiary Details")
 
 col1, col2, col3 = st.columns(3)
@@ -22,31 +46,50 @@ with col2:
 with col3:
     month_conception = st.selectbox(
         "Month of Conception",
-        list(range(1, 13))
+        [
+            "January", "February", "March", "April",
+            "May", "June", "July", "August",
+            "September", "October", "November", "December"
+        ]
     )
 
-# ---------------------------
+# ===============================
 # PREGNANCY & REGISTRATION
-# ---------------------------
+# ===============================
 st.subheader("Pregnancy & Registration Details")
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
-    lmp = st.date_input("LMP Date")
+    lmp_date = st.date_input("LMP Date")
 
 with col2:
     registration_date = st.date_input("Registration Date")
 
-with col3:
-    registration_bucket = st.selectbox(
-        "Registration Bucket",
-        ["Early", "On-time", "Late"]
-    )
+# 🔹 Derived Registration Bucket
+registration_bucket = None
+days_gap = None
 
-# ---------------------------
+if registration_date and lmp_date:
+    days_gap = (registration_date - lmp_date).days
+
+    if days_gap < 84:
+        registration_bucket = "Early"
+    elif 84 <= days_gap <= 168:
+        registration_bucket = "Mid"
+    else:
+        registration_bucket = "Late"
+
+st.info(
+    f"📌 Registration Bucket (Derived): **{registration_bucket}** "
+    f"(Gap: {days_gap} days)"
+    if registration_bucket else
+    "📌 Registration Bucket will be derived automatically"
+)
+
+# ===============================
 # PARITY & HOUSEHOLD
-# ---------------------------
+# ===============================
 st.subheader("Parity & Household Information")
 
 col1, col2, col3 = st.columns(3)
@@ -62,9 +105,9 @@ with col3:
         "Household Assets Score (log1p)", 0.0
     )
 
-# ---------------------------
+# ===============================
 # BMI PROGRESSION
-# ---------------------------
+# ===============================
 st.subheader("BMI Progression")
 
 col1, col2, col3, col4 = st.columns(4)
@@ -81,9 +124,9 @@ with col3:
 with col4:
     bmi_pw4 = st.number_input("BMI PW4")
 
-# ---------------------------
-# TOBACCO & ALCOHOL
-# ---------------------------
+# ===============================
+# SUBSTANCE USE
+# ===============================
 st.subheader("Substance Use")
 
 col1, col2, col3 = st.columns(3)
@@ -100,13 +143,12 @@ with col2:
 with col3:
     consume_alcohol = st.selectbox("Consume alcohol", ["No", "Yes"])
 
-# ---------------------------
-# ANC DETAILS
-# ---------------------------
+# ===============================
+# ANC DETAILS (DYNAMIC)
+# ===============================
 st.subheader("ANC Details")
 
 anc_completed = st.selectbox("No. of ANCs completed", [0, 1, 2, 3, 4])
-
 anc_data = {}
 
 for i in range(1, anc_completed + 1):
@@ -121,103 +163,24 @@ for i in range(1, anc_completed + 1):
             f"ANC {i} Weight (kg)", key=f"anc_weight_{i}"
         )
 
-    anc_data[f"ANC{i}_Date"] = anc_date
-    anc_data[f"ANC{i}_Weight"] = anc_weight
-
-# ---------------------------
-# SERVICES & SUPPLEMENTS
-# ---------------------------
-st.subheader("Services & Supplements")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    tt_given = st.selectbox(
-        "TT Injection given in last ANC", ["No", "Yes"]
+    anc_data[f"LMPtoINST{i}"] = (
+        (anc_date - lmp_date).days if anc_date and lmp_date else None
     )
 
-with col2:
-    ifa_tabs = st.number_input(
-        "IFA tablets received (last month, log1p)", 0.0
-    )
-
-with col3:
-    calcium_tabs = st.number_input(
-        "Calcium tablets consumed (last month, log1p)", 0.0
-    )
-
-# ---------------------------
-# SOCIAL & ENVIRONMENT
-# ---------------------------
-st.subheader("Social & Environmental Factors")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    food_group = st.selectbox(
-        "Food Groups Category",
-        ["Low", "Medium", "High"]
-    )
-
-with col2:
-    toilet_type = st.selectbox(
-        "Toilet Type", ["Improved", "Unimproved"]
-    )
-
-with col3:
-    water_source = st.selectbox(
-        "Water Source", ["Improved", "Unimproved"]
-    )
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    education = st.selectbox(
-        "Education Level",
-        ["None", "Primary", "Secondary", "Higher"]
-    )
-
-with col2:
-    social_media = st.selectbox(
-        "Social Media Category",
-        ["None", "WhatsApp", "Facebook", "YouTube", "Multiple"]
-    )
-
-with col3:
-    social_media_type = st.multiselect(
-        "Type of Social Media Enrolled In",
-        ["WhatsApp", "Facebook", "YouTube", "Instagram"]
-    )
-
-# ---------------------------
-# CASH TRANSFER SCHEMES
-# ---------------------------
-st.subheader("Cash Transfer Schemes")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    jsy_registered = st.selectbox("Registered for JSY", ["No", "Yes"])
-    jsy_inst = st.number_input("JSY installments received", 0, 5)
-
-with col2:
-    rajhsri_registered = st.selectbox("Registered for RAJHSRI", ["No", "Yes"])
-
-with col3:
-    pmmvy_inst = st.number_input(
-        "PMMVY installments received", 0, 3
-    )
-    pmmvy_inst_date = st.date_input("PMMVY Installment Date")
-
-# ---------------------------
-# FINAL DATA TABLE
-# ---------------------------
+# ===============================
+# FINAL RECORD
+# ===============================
 if st.button("➕ Add Beneficiary Record"):
     record = {
+        "Beneficiary Name": beneficiary_name,
+        "State": state,
+        "District": district,
+        "Block": block,
+        "Village": village,
         "Beneficiary age": beneficiary_age,
         "height": height,
         "MonthConception": month_conception,
-        "LMP": lmp,
+        "LMP": lmp_date,
         "Registration Date": registration_date,
         "RegistrationBucket": registration_bucket,
         "Child order/parity": parity,
@@ -230,21 +193,7 @@ if st.button("➕ Add Beneficiary Record"):
         "Status of current chewing of tobacco": chewing_status,
         "consume_alcohol": consume_alcohol,
         "No of ANCs completed": anc_completed,
-        "Service received during last ANC: TT Injection given": tt_given,
-        "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs,
-        "No. of calcium tablets consumed in last one month_log1p": calcium_tabs,
-        "Food_Groups_Category": food_group,
         "Household_Assets_Score_log1p": household_assets,
-        "toilet_type_clean": toilet_type,
-        "water_source_clean": water_source,
-        "education_clean": education,
-        "Social_Media_Category": social_media,
-        "Type of Social Media Enrolled In": ",".join(social_media_type),
-        "Registered for cash transfer scheme: JSY": jsy_registered,
-        "JSY-Number of installment received": jsy_inst,
-        "Registered for cash transfer scheme: RAJHSRI": rajhsri_registered,
-        "PMMVY-Number of installment received": pmmvy_inst,
-        "PMMVY Instalment Date": pmmvy_inst_date,
     }
 
     record.update(anc_data)
