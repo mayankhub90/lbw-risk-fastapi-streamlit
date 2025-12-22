@@ -71,13 +71,12 @@ with c1:
 with c2:
     living_children = st.number_input("Number of living child at now", 0, 10)
 
-MONTH_MAP = {
-    "January", "February", "March", "April",
-    "May", "June", "July", "August",
-    "September", "October", "November", "December"
-}
+month_conception = st.selectbox(
+    "Month of Conception",
+    ["January", "February", "March", "April", "May", "June",
+     "July", "August", "September", "October", "November", "December"]
+)
 
-month_conception = MONTH_MAP
 
 # =====================================================
 # 🤰 PREGNANCY & REGISTRATION DETAILS
