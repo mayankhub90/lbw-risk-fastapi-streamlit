@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 
 st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
-st.title("📋 Beneficiary Data Entry Form (UI – Variable Locked)")
+st.title("📋 LBW Prediction - Beneficiary Data Entry Form")
 
 # =====================================================
 # 🤰 IDENTIFICATION DETAILS
