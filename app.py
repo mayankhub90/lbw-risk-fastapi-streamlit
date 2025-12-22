@@ -31,7 +31,7 @@ st.subheader("Physiological Details")
 
 c1, c2, c3 = st.columns(3)
 with c1:
-    beneficiary_age = st.number_input("Beneficiary age (years)", 10, 60)
+    beneficiary_age = st.number_input("Beneficiary age (years)", 14, 60)
 with c2:
     height_cm = st.number_input("Height (cm)", 120.0, 200.0)
 with c3:
@@ -161,7 +161,7 @@ if valid_anc_dates:
     elif gap <= 168:
         ANCBucket = "Mid"
     else:
-        ANCBucket = "Later"
+        ANCBucket = "Late"
 
 if len(valid_anc_dates) >= 2:
     valid_anc_dates.sort()
@@ -177,12 +177,12 @@ LMPtoINST3 = (anc[3]["date"] - lmp_date).days if anc[3]["done"] and lmp_date els
 # =====================================================
 st.subheader("Remaining Features (Locked)")
 
-consume_tobacco = st.selectbox("consume_tobacco", ["Yes","No"])
+consume_tobacco = st.selectbox("Do you consume tobacco?", ["Yes","No"])
 chewing_status = st.selectbox(
     "Status of current chewing of tobacco",
     ["EVERY DAY","SOME DAYS","NOT AT ALL"]
 )
-consume_alcohol = st.selectbox("consume_alcohol", ["Yes","No"])
+consume_alcohol = st.selectbox("Do you consume alocohol?", ["Yes","No"])
 
 tt_given = st.selectbox(
     "Service received during last ANC: TT Injection given",
