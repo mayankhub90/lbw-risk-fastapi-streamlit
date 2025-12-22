@@ -438,7 +438,7 @@ if st.button("➕ Add / Update Record"):
         "JSY-Number of installment received": jsy_inst,
         "height": height_cm,
         "LMP": lmp_date,
-        Type_of_Social_Media_Enrolled_In = ",".join([x for x in social_media_selected if x != "Other"] + other_social_media)
+        "Social_Media_Category":Type_of_Social_Media_Enrolled_In,
         "Registration Date": registration_date,
         "PMMVY Instalment Date": pmmvy_inst1_date,
         "form_start_time": st.session_state.form_start_time.isoformat(),
