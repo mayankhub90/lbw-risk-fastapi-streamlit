@@ -335,6 +335,52 @@ Household_Assets_Score_log1p = round(math.log1p(raw_asset_score), 4)
 st.info(f"🏠 Household Assets Score (log1p): **{Household_Assets_Score_log1p}**")
 
 # =====================================================
+# 📱 DIGITAL ACCESS & SOCIAL MEDIA
+# =====================================================
+st.header("📱 Digital Access & Social Media")
+
+social_media_selected = st.multiselect(
+    "Social Media Platforms Used",
+    ["Facebook", "YouTube", "Instagram", "WhatsApp", "Other"]
+)
+
+other_social_media = []
+if "Other" in social_media_selected:
+    other_input = st.text_input("Specify other social media (comma-separated)")
+    if other_input:
+        other_social_media = [
+            x.strip() for x in other_input.split(",") if x.strip()
+        ]
+
+explicit_count = len([x for x in social_media_selected if x != "Other"])
+total_count = explicit_count + len(other_social_media)
+
+if total_count == 0:
+    Social_Media_Category = "None"
+elif total_count == 1:
+    Social_Media_Category = "Low"
+elif total_count <= 3:
+    Social_Media_Category = "Medium"
+else:
+    Social_Media_Category = "High"
+
+"Social_Media_Category": Social_Media_Category,
+"Type of Social Media Enrolled In": ",".join(
+    [x for x in social_media_selected if x != "Other"] + other_social_media
+),
+
+
+
+
+
+
+
+
+
+
+
+
+# =====================================================
 # 💰 SCHEMES
 # =====================================================
 st.header("💰 Scheme Participation")
