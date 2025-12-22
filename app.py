@@ -19,7 +19,7 @@ if "form_start_time" not in st.session_state:
     st.session_state.form_start_time = datetime.now()
 
 # =====================================================
-# LOAD EXISTING DATA (FOR EDIT MODE)
+# LOAD EXISTING DATA (EDIT MODE)
 # =====================================================
 if os.path.exists(CSV_PATH):
     existing_df = pd.read_csv(CSV_PATH)
@@ -64,8 +64,10 @@ c1, c2, c3 = st.columns(3)
 with c1:
     beneficiary_name = st.text_input("Beneficiary Name", get_val("Beneficiary Name", ""))
 with c2:
-    state = st.selectbox("State", states_sorted,
-                         index=states_sorted.index(get_val("State", states_sorted[0])))
+    state = st.selectbox(
+        "State", states_sorted,
+        index=states_sorted.index(get_val("State", states_sorted[0]))
+    )
 with c3:
     district = st.selectbox(
         "District",
@@ -140,20 +142,16 @@ with c2:
         value=pd.to_datetime(get_val("Registration Date", date.today()))
     )
 
-# ---- STRICT VALIDATIONS ----
-if lmp_date > registration_date:
-    st.error("❌ LMP date cannot be later than Registration Date")
-    st.stop()
-
-if lmp_date == registration_date:
-    st.error("❌ LMP date cannot be the same as Registration Date")
+# STRICT RULE
+if lmp_date >= registration_date:
+    st.error("❌ LMP date must be strictly earlier than Registration Date")
     st.stop()
 
 days_gap = (registration_date - lmp_date).days
 registration_bucket = (
-    "Early" if days_gap < 84
-    else "Mid" if days_gap <= 168
-    else "Late"
+    "Early" if days_gap < 84 else
+    "Mid" if days_gap <= 168 else
+    "Late"
 )
 
 # =====================================================
@@ -185,8 +183,9 @@ def anc_block(i, col):
                 st.stop()
 
             anc_dates.append(anc_date)
-            bmi = round(anc_weight / (height_m ** 2), 2) if height_m else None
-            anc[i].update({"date": anc_date, "weight": anc_weight, "bmi": bmi})
+            anc[i]["date"] = anc_date
+            anc[i]["weight"] = anc_weight
+            anc[i]["bmi"] = round(anc_weight / (height_m ** 2), 2)
 
 anc_block(1, col_left)
 anc_block(2, col_left)
@@ -209,8 +208,7 @@ anc_completed = sum(1 for a in anc.values() if a["done"])
 tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No"])
 
 valid_dates = [a["date"] for a in anc.values() if a["done"]]
-ANCBucket = None
-counselling_gap_days = None
+ANCBucket, counselling_gap_days = None, None
 
 if valid_dates:
     first_anc = min(valid_dates)
@@ -249,7 +247,7 @@ calcium_tabs_log1p = round(math.log1p(calcium_tabs), 4)
 food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5])
 
 # =====================================================
-# 🏠 SES & ASSETS
+# 🏠 SES
 # =====================================================
 st.header("🏠 Household & SES")
 
@@ -271,13 +269,23 @@ education_clean = st.selectbox(
      "Secondary (9–12)","Graduate & above"]
 )
 
+# =====================================================
+# 🏠 HOUSEHOLD ASSETS
+# =====================================================
+st.subheader("🏠 Household Assets")
+
 ASSET_WEIGHTS = {
     "Electricity": 1.0, "Mattress": 0.5, "Pressure Cooker": 0.5,
-    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5, "Electric Fan": 0.75, "Radio/Transistor":0.5, "B&W Television":0.5, "Color Television":1.0, "Sewing Machine":0.75, 
-    "Mobile Telephone": 1.0, "Internet": 1.25, "Computer": 1.25,
-    "Refrigerator": 1.25, "Air Conditioner/Cooler":1.25, "Washing Machine":1.25, "Bicycle": 0.5,
-    "Motorcycle/Scooter": 1.0, "Car": 1.5, "Water Pump":0.75, 
-    "Animal": 0.5, "Tractor": 1.25, "Thresher":0.75
+    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5,
+    "Electric Fan": 0.75, "Radio/Transistor": 0.5,
+    "B&W Television": 0.5, "Color Television": 1.0,
+    "Sewing Machine": 0.75, "Mobile Telephone": 1.0,
+    "Internet": 1.25, "Computer": 1.25,
+    "Refrigerator": 1.25, "Air Conditioner/Cooler": 1.25,
+    "Washing Machine": 1.25, "Bicycle": 0.5,
+    "Motorcycle/Scooter": 1.0, "Car": 1.5,
+    "Water Pump": 0.75, "Animal": 0.5,
+    "Tractor": 1.25, "Thresher": 0.75
 }
 
 raw_asset_score = 0
@@ -288,6 +296,7 @@ for i, (asset, wt) in enumerate(ASSET_WEIGHTS.items()):
             raw_asset_score += wt
 
 Household_Assets_Score_log1p = round(math.log1p(raw_asset_score), 4)
+st.info(f"🏠 Household Assets Score (log1p): **{Household_Assets_Score_log1p}**")
 
 # =====================================================
 # 💰 SCHEMES
@@ -374,4 +383,5 @@ if st.button("➕ Add / Update Record"):
             df.to_csv(CSV_PATH, index=False)
 
     st.success("✅ Record saved successfully")
+    st.subheader("🔍 Backend Saved Record")
     st.json(record)
