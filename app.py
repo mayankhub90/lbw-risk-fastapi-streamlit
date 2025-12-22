@@ -225,14 +225,14 @@ if len(valid_dates) >= 2:
 # =====================================================
 st.header("🚬 Tobacco & Alcohol")
 
-consume_tobacco = st.selectbox("Consume tobacco?", ["No","Yes"])
+consume_tobacco = st.selectbox("Consume tobacco?", ["N","Y","O"])
 chewing_status = (
     st.selectbox("Chewing tobacco status",
                  ["EVERY DAY","SOME DAYS","NOT AT ALL"])
-    if consume_tobacco == "Yes" else None
+    if consume_tobacco == "Y" else None
 )
 
-consume_alcohol = st.selectbox("Consume alcohol?", ["No","Yes"])
+consume_alcohol = st.selectbox("Consume alcohol?", ["N","Y","O"])
 
 # =====================================================
 # 🥗 NUTRITION
