@@ -72,9 +72,9 @@ with c3:
 # Derived Hb risk
 if hb_level < 6:
     measured_HB_risk_bin = "Severe Anaemia"
-elif hb_level < 8:
+elif hb_level < 9:
     measured_HB_risk_bin = "Moderate Anaemia"
-elif hb_level < 11:
+elif hb_level < 12:
     measured_HB_risk_bin = "Mild Anaemia"
 else:
     measured_HB_risk_bin = "Normal"
