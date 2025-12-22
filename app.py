@@ -64,7 +64,7 @@ st.subheader("Basic Beneficiary Details")
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    beneficiary_age = st.number_input("Beneficiary age (years)", 10, 60)
+    beneficiary_age = st.number_input("Beneficiary age (years)", 14, 60)
 with col2:
     height = st.number_input("Height (cm)", 120, 200)
 with col3:
