@@ -225,14 +225,36 @@ if len(valid_dates) >= 2:
 # =====================================================
 st.header("🚬 Tobacco & Alcohol")
 
-consume_tobacco = st.selectbox("Consume tobacco?", ["N","Y","O"])
+# ---- Display → Backend mapping ----
+YN_MAP = {
+    "No": "N",
+    "Yes": "Y",
+    "Other": "O"
+}
+
+# ---- Tobacco ----
+consume_tobacco_ui = st.selectbox(
+    "Consume tobacco?",
+    list(YN_MAP.keys())
+)
+consume_tobacco = YN_MAP[consume_tobacco_ui]   # <-- saved value (N/Y/O)
+
 chewing_status = (
-    st.selectbox("Chewing tobacco status",
-                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
-    if consume_tobacco == "Y" else None
+    st.selectbox(
+        "Chewing tobacco status",
+        ["EVERY DAY", "SOME DAYS", "NOT AT ALL"]
+    )
+    if consume_tobacco == "Y"
+    else None
 )
 
-consume_alcohol = st.selectbox("Consume alcohol?", ["N","Y","O"])
+# ---- Alcohol ----
+consume_alcohol_ui = st.selectbox(
+    "Consume alcohol?",
+    list(YN_MAP.keys())
+)
+consume_alcohol = YN_MAP[consume_alcohol_ui]   # <-- saved value (N/Y/O)
+
 
 # =====================================================
 # 🥗 NUTRITION
