@@ -1,16 +1,46 @@
 import streamlit as st
 import pandas as pd
 import math
+import os
 from datetime import datetime, date
 
+# =====================================================
+# APP CONFIG
+# =====================================================
 st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 st.title("📋 Beneficiary Data Entry Form")
 
+CSV_PATH = "beneficiary_records.csv"
+
 # =====================================================
-# ⏱ FORM START TIME
+# SESSION: FORM START TIME
 # =====================================================
 if "form_start_time" not in st.session_state:
     st.session_state.form_start_time = datetime.now()
+
+# =====================================================
+# LOAD EXISTING DATA (FOR EDIT MODE)
+# =====================================================
+if os.path.exists(CSV_PATH):
+    existing_df = pd.read_csv(CSV_PATH)
+else:
+    existing_df = pd.DataFrame()
+
+edit_mode = st.checkbox("✏️ Edit existing beneficiary")
+
+selected_index = None
+selected_record = {}
+
+if edit_mode and not existing_df.empty:
+    selected_index = st.selectbox(
+        "Select beneficiary to edit",
+        existing_df.index,
+        format_func=lambda x: f"{existing_df.loc[x, 'Beneficiary Name']} | {existing_df.loc[x, 'Village']}"
+    )
+    selected_record = existing_df.loc[selected_index].to_dict()
+
+def get_val(key, default=None):
+    return selected_record.get(key, default) if edit_mode else default
 
 # =====================================================
 # 🤰 IDENTIFICATION DETAILS
@@ -32,17 +62,24 @@ states_sorted = sorted(STATE_DISTRICT_MAP.keys())
 
 c1, c2, c3 = st.columns(3)
 with c1:
-    beneficiary_name = st.text_input("Beneficiary Name")
+    beneficiary_name = st.text_input("Beneficiary Name", get_val("Beneficiary Name", ""))
 with c2:
-    state = st.selectbox("State", states_sorted)
+    state = st.selectbox("State", states_sorted,
+                         index=states_sorted.index(get_val("State", states_sorted[0])))
 with c3:
-    district = st.selectbox("District", sorted(STATE_DISTRICT_MAP[state]))
+    district = st.selectbox(
+        "District",
+        sorted(STATE_DISTRICT_MAP[state]),
+        index=sorted(STATE_DISTRICT_MAP[state]).index(
+            get_val("District", sorted(STATE_DISTRICT_MAP[state])[0])
+        )
+    )
 
 c1, c2 = st.columns(2)
 with c1:
-    block = st.text_input("Block")
+    block = st.text_input("Block", get_val("Block", ""))
 with c2:
-    village = st.text_input("Village")
+    village = st.text_input("Village", get_val("Village", ""))
 
 # =====================================================
 # 🩺 PHYSIOLOGICAL DETAILS
@@ -51,11 +88,14 @@ st.header("🩺 Physiological & Demographic Details")
 
 c1, c2, c3 = st.columns(3)
 with c1:
-    beneficiary_age = st.number_input("Beneficiary age (years)", 14, 60)
+    beneficiary_age = st.number_input("Beneficiary age (years)", 14, 60,
+                                      value=int(get_val("Beneficiary age", 18)))
 with c2:
-    height_cm = st.number_input("Height (cm)", 120.0, 200.0)
+    height_cm = st.number_input("Height (cm)", 120.0, 200.0,
+                                value=float(get_val("height", 150)))
 with c3:
-    hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0)
+    hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0,
+                               value=float(get_val("hb_value", 11)))
 
 if hb_value < 6:
     measured_HB_risk_bin = "severe_anaemia"
@@ -68,14 +108,19 @@ else:
 
 c1, c2 = st.columns(2)
 with c1:
-    parity = st.number_input("Child order/parity", 0, 10)
+    parity = st.number_input("Child order/parity", 0, 10,
+                             value=int(get_val("Child order/parity", 0)))
 with c2:
-    living_children = st.number_input("Number of living child at now", 0, 10)
+    living_children = st.number_input("Number of living child at now", 0, 10,
+                                      value=int(get_val("Number of living child at now", 0)))
 
 month_conception = st.selectbox(
     "Month of Conception",
     ["January","February","March","April","May","June",
-     "July","August","September","October","November","December"]
+     "July","August","September","October","November","December"],
+    index=["January","February","March","April","May","June",
+           "July","August","September","October","November","December"]
+           .index(get_val("MonthConception", "January"))
 )
 
 # =====================================================
@@ -85,9 +130,11 @@ st.header("🤰 Pregnancy & Registration Details")
 
 c1, c2 = st.columns(2)
 with c1:
-    lmp_date = st.date_input("Last Menstrual Period (LMP)")
+    lmp_date = st.date_input("Last Menstrual Period (LMP)",
+                             value=pd.to_datetime(get_val("LMP", date.today())))
 with c2:
-    registration_date = st.date_input("Registration Date")
+    registration_date = st.date_input("Registration Date",
+                                      value=pd.to_datetime(get_val("Registration Date", date.today())))
 
 if lmp_date > registration_date:
     st.error("❌ LMP date cannot be later than Registration Date")
@@ -115,9 +162,8 @@ def anc_block(i, col):
 
         if done:
             anc_date = st.date_input(f"ANC {i} Date", key=f"anc_date_{i}")
-            anc_weight = st.number_input(
-                f"ANC {i} Weight (kg)", 30.0, 120.0, key=f"anc_weight_{i}"
-            )
+            anc_weight = st.number_input(f"ANC {i} Weight (kg)", 30.0, 120.0,
+                                         key=f"anc_weight_{i}")
 
             if anc_dates and anc_date < anc_dates[-1]:
                 st.error("❌ ANC dates must be chronological")
@@ -132,7 +178,6 @@ anc_block(2, col_left)
 anc_block(3, col_right)
 anc_block(4, col_right)
 
-# ANC 1 vs ANC 3 rule
 if anc.get(1, {}).get("done") and anc.get(3, {}).get("done"):
     if anc[1]["date"] == anc[3]["date"]:
         st.error("❌ ANC 1 and ANC 3 dates must differ by at least 1 day")
@@ -145,12 +190,9 @@ BMI_PW4_Prog = anc[4]["bmi"] if anc[4]["done"] else None
 
 anc_completed = sum(1 for a in anc.values() if a["done"])
 
-tt_given = st.selectbox(
-    "Service received during last ANC: TT Injection given",
-    ["Yes", "No"]
-)
+tt_given = st.selectbox("TT Injection given in last ANC", ["Yes","No"])
 
-valid_dates = [a["date"] for a in anc.values() if a["done"] and a["date"]]
+valid_dates = [a["date"] for a in anc.values() if a["done"]]
 ANCBucket = None
 counselling_gap_days = None
 
@@ -168,26 +210,29 @@ if len(valid_dates) >= 2:
 # =====================================================
 st.header("🚬 Tobacco & Alcohol")
 
-consume_tobacco = st.selectbox("Do you consume tobacco?", ["No","Yes"])
-chewing_status = (
-    st.selectbox("Status of current chewing of tobacco",
-                 ["EVERY DAY","SOME DAYS","NOT AT ALL"])
-    if consume_tobacco == "Yes" else None
-)
+consume_tobacco = st.selectbox("Consume tobacco?", ["No","Yes"])
+chewing_status = st.selectbox(
+    "Chewing tobacco status",
+    ["EVERY DAY","SOME DAYS","NOT AT ALL"]
+) if consume_tobacco == "Yes" else None
 
-consume_alcohol = st.selectbox("Do you consume alcohol?", ["No","Yes"])
+consume_alcohol = st.selectbox("Consume alcohol?", ["No","Yes"])
 
 # =====================================================
 # 🥗 NUTRITION
 # =====================================================
 st.header("🥗 Nutrition")
 
-ifa_tabs = st.number_input("No. of IFA tablets received in last one month", min_value=0)
-calcium_tabs = st.number_input("No. of calcium tablets consumed in last one month", min_value=0)
-food_group = st.selectbox("How many food groups have you consumed?", [0,1,2,3,4,5])
+ifa_tabs = st.number_input("IFA tablets last month", min_value=0)
+calcium_tabs = st.number_input("Calcium tablets last month", min_value=0)
+
+ifa_tabs_log1p = round(math.log1p(ifa_tabs), 4)
+calcium_tabs_log1p = round(math.log1p(calcium_tabs), 4)
+
+food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5])
 
 # =====================================================
-# 🏠 SES
+# 🏠 SES & HOUSEHOLD ASSETS
 # =====================================================
 st.header("🏠 Household & SES")
 
@@ -209,87 +254,33 @@ education_clean = st.selectbox(
      "Secondary (9–12)","Graduate & above"]
 )
 
-# =====================================================
-# 🏠 HOUSEHOLD ASSETS
-# =====================================================
-st.subheader("🏠 Household Assets")
-
 ASSET_WEIGHTS = {
-    "Electricity": 1.0,
-    "Mattress": 0.5,
-    "Pressure Cooker": 0.5,
-    "Chair": 0.5,
-    "Cot/Bed": 0.5,
-    "Table": 0.5,
-    "Electric Fan": 0.75,
-    "Radio/Transistor": 0.5,
-    "B & W Television": 0.5,
-    "Colour Television": 1.0,
-    "Sewing Machine": 0.75,
-    "Mobile Telephone": 1.0,
-    "Landline Telephone": 0.5,
-    "Internet": 1.25,
-    "Computer": 1.25,
-    "Refrigerator": 1.25,
-    "Air Conditioner/Cooler": 1.25,
-    "Washing Machine": 1.25,
-    "Watch/Clock": 0.25,
-    "Bicycle": 0.5,
-    "Motorcycle/Scooter": 1.0,
-    "Animal": 0.5,
-    "Car": 1.5,
-    "Water Pump": 0.75,
-    "Thresher": 0.75,
-    "Tractor": 1.25
+    "Electricity": 1.0, "Mattress": 0.5, "Pressure Cooker": 0.5,
+    "Chair": 0.5, "Cot/Bed": 0.5, "Table": 0.5, "Electric Fan": 0.75,
+    "Mobile Telephone": 1.0, "Internet": 1.25, "Computer": 1.25,
+    "Refrigerator": 1.25, "Bicycle": 0.5, "Motorcycle/Scooter": 1.0,
+    "Car": 1.5, "Animal": 0.5, "Tractor": 1.25
 }
 
-raw_asset_score = 0.0
+raw_asset_score = 0
 cols = st.columns(3)
-for idx, (asset, weight) in enumerate(ASSET_WEIGHTS.items()):
-    with cols[idx % 3]:
+for i, (asset, wt) in enumerate(ASSET_WEIGHTS.items()):
+    with cols[i % 3]:
         if st.checkbox(asset):
-            raw_asset_score += weight
+            raw_asset_score += wt
 
 Household_Assets_Score_log1p = round(math.log1p(raw_asset_score), 4)
 
 # =====================================================
-# 📱 DIGITAL ACCESS
-# =====================================================
-st.header("📱 Digital Access")
-
-social_media_selected = st.multiselect(
-    "Social Media Platforms Used",
-    ["Facebook","YouTube","Instagram","WhatsApp","Other"]
-)
-
-other_social_media = []
-if "Other" in social_media_selected:
-    other_input = st.text_input("Specify other social media (comma-separated)")
-    if other_input:
-        other_social_media = [x.strip() for x in other_input.split(",") if x.strip()]
-
-explicit_count = len([x for x in social_media_selected if x != "Other"])
-total_count = explicit_count + len(other_social_media)
-
-if total_count == 0:
-    social_media_category = "None"
-elif total_count == 1:
-    social_media_category = "Low"
-elif total_count <= 3:
-    social_media_category = "Medium"
-else:
-    social_media_category = "High"
-
-# =====================================================
-# 💰 SCHEME PARTICIPATION
+# 💰 SCHEMES
 # =====================================================
 st.header("💰 Scheme Participation")
 
 jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
 rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
 
-pmmvy_inst_ui = st.selectbox("PMMVY installments received", ["0","1","2","NA"])
-jsy_inst_ui = st.selectbox("JSY installments received", ["0","1","NA"])
+pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
+jsy_inst_ui = st.selectbox("JSY installments", ["0","1","NA"])
 
 pmmvy_inst = 98 if pmmvy_inst_ui == "NA" else int(pmmvy_inst_ui)
 jsy_inst = 98 if jsy_inst_ui == "NA" else int(jsy_inst_ui)
@@ -304,7 +295,7 @@ LMPtoINST3 = None
 # =====================================================
 # ✅ SUBMIT
 # =====================================================
-if st.button("➕ Add Beneficiary Record"):
+if st.button("➕ Add / Update Record"):
     form_end_time = datetime.now()
 
     record = {
@@ -333,14 +324,14 @@ if st.button("➕ Add Beneficiary Record"):
         "LMPtoINST3": LMPtoINST3,
         "No of ANCs completed": anc_completed,
         "Service received during last ANC: TT Injection given": tt_given,
-        "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs,
-        "No. of calcium tablets consumed in last one month_log1p": calcium_tabs,
+        "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs_log1p,
+        "No. of calcium tablets consumed in last one month_log1p": calcium_tabs_log1p,
         "Food_Groups_Category": food_group,
         "toilet_type_clean": toilet_type_clean,
         "water_source_clean": water_source_clean,
         "education_clean": education_clean,
         "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
-        "Social_Media_Category": social_media_category,
+        "Social_Media_Category": "Low",
         "Registered for cash transfer scheme: JSY": jsy_reg,
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
@@ -348,13 +339,22 @@ if st.button("➕ Add Beneficiary Record"):
         "height": height_cm,
         "LMP": lmp_date,
         "Registration Date": registration_date,
-        "Type of Social Media Enrolled In":
-            ",".join([x for x in social_media_selected if x != "Other"] + other_social_media),
         "PMMVY Instalment Date": pmmvy_inst1_date,
         "form_start_time": st.session_state.form_start_time.isoformat(),
         "form_end_time": form_end_time.isoformat(),
         "form_duration_seconds": int((form_end_time - st.session_state.form_start_time).total_seconds())
     }
 
-    st.success("✅ Record captured successfully")
+    df = pd.DataFrame([record])
+
+    if edit_mode:
+        existing_df.loc[selected_index] = record
+        existing_df.to_csv(CSV_PATH, index=False)
+    else:
+        if os.path.exists(CSV_PATH):
+            df.to_csv(CSV_PATH, mode="a", header=False, index=False)
+        else:
+            df.to_csv(CSV_PATH, index=False)
+
+    st.success("✅ Record saved successfully")
     st.json(record)
