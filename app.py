@@ -94,7 +94,7 @@ with c2:
     height_cm = st.number_input("Height (cm)", 120.0, 200.0,
                                 value=float(get_val("height", 150)))
 with c3:
-    hb_value = st.number_input("Measured Hb (g/dL)", 3.0, 18.0,
+    hb_value = st.number_input("Measured Hb (g/dL)", 3, 18,
                                value=float(get_val("hb_value", 11)))
 
 if hb_value < 6:
@@ -130,18 +130,34 @@ st.header("🤰 Pregnancy & Registration Details")
 
 c1, c2 = st.columns(2)
 with c1:
-    lmp_date = st.date_input("Last Menstrual Period (LMP)",
-                             value=pd.to_datetime(get_val("LMP", date.today())))
+    lmp_date = st.date_input(
+        "Last Menstrual Period (LMP)",
+        value=pd.to_datetime(get_val("LMP", date.today()))
+    )
 with c2:
-    registration_date = st.date_input("Registration Date",
-                                      value=pd.to_datetime(get_val("Registration Date", date.today())))
+    registration_date = st.date_input(
+        "Registration Date",
+        value=pd.to_datetime(get_val("Registration Date", date.today()))
+    )
 
+# ---- VALIDATIONS ----
 if lmp_date > registration_date:
     st.error("❌ LMP date cannot be later than Registration Date")
     st.stop()
 
+if lmp_date == registration_date:
+    st.error("❌ LMP date cannot be the same as Registration Date")
+    st.stop()
+
+# ---- DERIVED REGISTRATION BUCKET ----
 days_gap = (registration_date - lmp_date).days
-registration_bucket = "Early" if days_gap < 84 else "Mid" if days_gap <= 168 else "Late"
+
+registration_bucket = (
+    "Early" if days_gap < 84
+    else "Mid" if days_gap <= 168
+    else "Late"
+)
+
 
 # =====================================================
 # 🏥 ANC & BMI
