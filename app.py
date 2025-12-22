@@ -63,7 +63,7 @@ st.subheader("Physiological Details")
 
 c1, c2, c3 = st.columns(3)
 with c1:
-    beneficiary_age = st.number_input("Beneficiary age (years)", 10, 60)
+    beneficiary_age = st.number_input("Beneficiary age (years)", 14, 60)
 with c2:
     height = st.number_input("Height (cm)", 120, 200)
 with c3:
