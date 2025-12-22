@@ -4,7 +4,7 @@ from datetime import date
 
 st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 
-st.title("📋 Beneficiary Data Entry Form (UI Only)")
+st.title("📋 Beneficiary Data Entry Form")
 
 # ---------------------------
 # BASIC DETAILS
