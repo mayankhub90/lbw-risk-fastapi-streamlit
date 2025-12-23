@@ -34,12 +34,14 @@ st.title("📋 Beneficiary Data Entry Form")
 
 CSV_PATH = "beneficiary_records.csv"
 
+#JSON safe Values
 def make_json_safe(value):
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     if value is None:
         return ""
     return value
+
 
 
 # =====================================================
@@ -476,23 +478,19 @@ if st.button("➕ Add / Update Record"):
     }
 
 
-# ================= SAVE TO GOOGLE SHEET =================
-worksheet = get_gsheet()
+# ================= GOOGLE SHEET WRITE =================
+    GSHEET_NAME = "LBW_Beneficiary_Data"
+    worksheet = get_gsheet(GSHEET_NAME)
 
-# Add header if sheet is empty
-if worksheet.row_count == 0:
-    worksheet.append_row(list(record.keys()))
-    
-# Append data row
-safe_row = [make_json_safe(v) for v in record.values()]
+    safe_row = [make_json_safe(v) for v in record.values()]
 
-worksheet.append_row(
-    safe_row,
-    value_input_option="USER_ENTERED"
-)
+    worksheet.append_row(
+        safe_row,
+        value_input_option="USER_ENTERED"
+    )
 
- 
-st.success("✅ Record saved to Google Sheets")
+    st.success("✅ Record saved successfully to Google Sheets")
+    st.json(record)
 
 
    
