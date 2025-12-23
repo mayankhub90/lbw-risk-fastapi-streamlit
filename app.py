@@ -497,21 +497,6 @@ if st.button("➕ Add / Update Record"):
         "LBW_Risk_Percentage": lbw_percent
     }
 
-
-# ================= GOOGLE SHEET WRITE =================
-    GSHEET_NAME = "LBW_Beneficiary_Data"
-    worksheet = get_gsheet(GSHEET_ID)
-
-    safe_row = [make_json_safe(v) for v in record.values()]
-
-    worksheet.append_row(
-        safe_row,
-        value_input_option="USER_ENTERED"
-    )
-
-    st.success("✅ Record saved successfully to Google Sheets")
-    st.json(record)
-
 # ==========================
 # PREDICTION
 # ==========================
@@ -545,6 +530,23 @@ else:
     risk_band = "🔴 High Risk"
 
 st.info(f"Risk Category: **{risk_band}**")
+
+
+# ================= GOOGLE SHEET WRITE =================
+    GSHEET_NAME = "LBW_Beneficiary_Data"
+    worksheet = get_gsheet(GSHEET_ID)
+
+    safe_row = [make_json_safe(v) for v in record.values()]
+
+    worksheet.append_row(
+        safe_row,
+        value_input_option="USER_ENTERED"
+    )
+
+    st.success("✅ Record saved successfully to Google Sheets")
+    st.json(record)
+
+
 
 
 
