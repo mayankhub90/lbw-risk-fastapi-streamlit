@@ -13,3 +13,6 @@ matplotlib>=3.8
 
 pydantic>=2.6
 requests>=2.31
+
+gspread
+google-auth
