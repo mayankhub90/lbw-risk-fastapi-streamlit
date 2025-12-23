@@ -10,7 +10,7 @@ from datetime import datetime, date
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_gsheet(spreadsheet_id, worksheet_name="LBWScores"):
+def get_gsheet(spreadsheet_id = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc", worksheet_name="LBWScores"):
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
         scopes=[
@@ -69,15 +69,8 @@ def get_val(key, default=None):
 st.header("🤰 Identification Details")
 
 STATE_DISTRICT_MAP = {
-    "Andhra Pradesh": ["Anantapur", "Chittoor", "Guntur"],
-    "Bihar": ["Patna", "Gaya", "Muzaffarpur"],
-    "Delhi": ["Central Delhi", "East Delhi", "New Delhi"],
-    "Karnataka": ["Bengaluru Urban", "Mysuru", "Dharwad", "Tumkur"],
-    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
-    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur"],
-    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
-    "Uttar Pradesh": ["Lucknow", "Kanpur Nagar", "Varanasi"]
-}
+       "Karnataka": ["Bengaluru Urban", "Mysuru", "Tumkur"],
+  }
 
 states_sorted = sorted(STATE_DISTRICT_MAP.keys())
 
