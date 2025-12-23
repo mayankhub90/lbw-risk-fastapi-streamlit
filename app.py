@@ -477,7 +477,7 @@ if st.button("➕ Add / Update Record"):
         df.to_csv(CSV_PATH, index=False)
 
     # ---- GOOGLE SHEETS (STEP-5) ----
-    worksheet = get_gsheet(sheet_name)
+    worksheet = get_gsheet(GSHEET_NAME)
     headers = worksheet.row_values(1)
     row = [record.get(h, "") for h in headers]
     worksheet.append_row(row, value_input_option="USER_ENTERED")
