@@ -492,5 +492,5 @@ row_to_append = [record.get(col, "") for col in sheet_headers]
 sheet.append_row(row_to_append, value_input_option="USER_ENTERED")
 
 
-    st.subheader("🔍 Backend Saved Record")
+   
     st.json(record)
