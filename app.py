@@ -493,4 +493,4 @@ sheet.append_row(row_to_append, value_input_option="USER_ENTERED")
 
 
    
-    st.json(record)
+       
