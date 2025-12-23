@@ -480,16 +480,6 @@ worksheet.append_row(list(record.values()),
     value_input_option="USER_ENTERED"
 )
  
-# ---- CSV BACKUP ----
-    df = pd.DataFrame([record])
-    if os.path.exists(CSV_PATH):
-        df.to_csv(CSV_PATH, mode="a", header=False, index=False)
-    else:
-        df.to_csv(CSV_PATH, index=False)
-  
-
-
-
 st.success("✅ Record saved to Google Sheets")
 
 
