@@ -483,7 +483,7 @@ if worksheet.row_count == 0:
     worksheet.append_row(list(record.keys()))
 
 st.success("✅ Record saved to Google Sheets")
-st.json(record)
+
 
    
        
