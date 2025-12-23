@@ -484,8 +484,7 @@ if worksheet.row_count == 0:
 
 # Append data row
 worksheet.append_row(
-    list(record.values()),
-    value_input_option="USER_ENTERED"
+      value_input_option="USER_ENTERED"
 )
 
 st.success("✅ Record saved to Google Sheets")
