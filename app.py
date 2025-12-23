@@ -493,14 +493,22 @@ if st.button("Predict Score"):
         ),
     }
 
+   # -------------------------
+    # 2️⃣ PREDICTION (FIXED)
     # -------------------------
-    # 2️⃣ PREDICTION
-    # -------------------------
-    X_pred = pd.DataFrame(
-        [{k: record.get(k, None) for k in feature_order}]
-    ).replace({None: np.nan})
+    from preprocessing import preprocess_for_model
+    import numpy as np
 
-    lbw_prob = float(model.predict_proba(X_pred)[0][1])
+    # Build model input strictly using training feature order
+    X_raw = pd.DataFrame(
+        [{k: record.get(k, None) for k in feature_order}]
+    )
+
+    # Apply preprocessing (ENCODING HAPPENS HERE)
+    X_processed = preprocess_for_model(X_raw)
+
+    # Predict
+    lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
 
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
@@ -522,8 +530,3 @@ if st.button("Predict Score"):
     )
 
     st.success("✅ Saved & Predicted Successfully")
-
-
-
-   
-       
