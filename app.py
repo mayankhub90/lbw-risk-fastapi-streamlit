@@ -480,7 +480,7 @@ if st.button("➕ Add / Update Record"):
 
 # ================= GOOGLE SHEET WRITE =================
     GSHEET_NAME = "LBW_Beneficiary_Data"
-    worksheet = get_gsheet(GSHEET_NAME)
+    worksheet = get_gsheet(GSHEET_ID)
 
     safe_row = [make_json_safe(v) for v in record.values()]
 
