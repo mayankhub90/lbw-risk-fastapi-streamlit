@@ -481,10 +481,6 @@ worksheet = get_gsheet()
 # Add header if sheet is empty
 if worksheet.row_count == 0:
     worksheet.append_row(list(record.keys()))
-
-# Append data row
-worksheet.append_row(
-      value_input_option="USER_ENTERED"
 )
 
 st.success("✅ Record saved to Google Sheets")
