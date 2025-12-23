@@ -4,13 +4,15 @@ import math
 import os
 from datetime import datetime, date
 
-# =====================================================
-# GOOGLE SHEETS SETUP
-# =====================================================
+# ================= GOOGLE SHEET SETUP =================
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_gsheet(spreadsheet_id = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc", worksheet_name="LBWScores"):
+# 🔴 REPLACE THIS WITH YOUR ACTUAL SPREADSHEET ID
+GSHEET_ID = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc"
+GSHEET_WORKSHEET = "LBWScores"
+
+def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
         scopes=[
@@ -31,7 +33,6 @@ st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 st.title("📋 Beneficiary Data Entry Form")
 
 CSV_PATH = "beneficiary_records.csv"
-GSHEET_ID = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc"   # <-- CHANGE ONLY THIS
 
 # =====================================================
 # SESSION: FORM START TIME
@@ -472,17 +473,23 @@ if st.button("➕ Add / Update Record"):
         df.to_csv(CSV_PATH, mode="a", header=False, index=False)
     else:
         df.to_csv(CSV_PATH, index=False)
+  
 
-    # ---- GOOGLE SHEETS (STEP-5) ----
-    worksheet = get_gsheet(GSHEET_ID)
-    headers = worksheet.row_values(1)
-    row = [record.get(h, "") for h in headers]
-    worksheet.append_row(row, value_input_option="USER_ENTERED")
+# ================= SAVE TO GOOGLE SHEET =================
+worksheet = get_gsheet()
 
-    st.success("✅ Record saved to Google Sheets")
+# Add header if sheet is empty
+if worksheet.row_count == 0:
+    worksheet.append_row(list(record.keys()))
+
+# Append data row
+worksheet.append_row(
+    list(record.values()),
+    value_input_option="USER_ENTERED"
+)
+
+st.success("✅ Record saved to Google Sheets")
     st.json(record)
-
-
 
    
        
