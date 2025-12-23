@@ -10,15 +10,19 @@ from datetime import datetime, date
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_gsheet(sheet_name, worksheet_name="LBWScores"):
+def get_gsheet(spreadsheet_id, worksheet_name="LBWScores"):
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
     )
     client = gspread.authorize(creds)
-    spreadsheet = client.open(sheet_name)
+    spreadsheet = client.open_by_key(spreadsheet_id)
     worksheet = spreadsheet.worksheet(worksheet_name)
     return worksheet
+
 
 # =====================================================
 # APP CONFIG
@@ -27,7 +31,7 @@ st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 st.title("📋 Beneficiary Data Entry Form")
 
 CSV_PATH = "beneficiary_records.csv"
-GSHEET_NAME = "LBW_Beneficiary_Data"   # <-- CHANGE ONLY THIS
+GSHEET_ID = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc"   # <-- CHANGE ONLY THIS
 
 # =====================================================
 # SESSION: FORM START TIME
@@ -477,7 +481,7 @@ if st.button("➕ Add / Update Record"):
         df.to_csv(CSV_PATH, index=False)
 
     # ---- GOOGLE SHEETS (STEP-5) ----
-    worksheet = get_gsheet(GSHEET_NAME)
+    worksheet = get_gsheet(GSHEET_ID)
     headers = worksheet.row_values(1)
     row = [record.get(h, "") for h in headers]
     worksheet.append_row(row, value_input_option="USER_ENTERED")
