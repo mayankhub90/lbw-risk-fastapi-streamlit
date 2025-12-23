@@ -10,7 +10,7 @@ from datetime import datetime, date
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_gsheet(sheet_name, worksheet_name="LBWScores"):
+def get_gsheet(LBW_Beneficiary_Data, worksheet_name="LBWScores"):
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
         scopes=["https://www.googleapis.com/auth/spreadsheets"]
