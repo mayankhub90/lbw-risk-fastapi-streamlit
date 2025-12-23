@@ -437,8 +437,12 @@ LMPtoINST3 = None
 # ✅ SUBMIT
 # =====================================================
 if st.button("➕ Add / Update Record"):
+
     form_end_time = datetime.now()
 
+    # -------------------------
+    # 1️⃣ BUILD RECORD
+    # -------------------------
     record = {
         "Beneficiary Name": beneficiary_name,
         "State": state,
@@ -484,38 +488,40 @@ if st.button("➕ Add / Update Record"):
         "PMMVY Instalment Date": pmmvy_inst1_date,
         "form_start_time": st.session_state.form_start_time.isoformat(),
         "form_end_time": form_end_time.isoformat(),
-        "form_duration_seconds": int((form_end_time - st.session_state.form_start_time).total_seconds()),
-   }
+        "form_duration_seconds": int(
+            (form_end_time - st.session_state.form_start_time).total_seconds()
+        ),
+    }
 
-# =========================
-# 🔮 PREDICTION
-# =========================
-X_pred = pd.DataFrame(
-    [{k: record.get(k, None) for k in feature_order}]
-)
-X_pred = X_pred.replace({None: np.nan})
+    # -------------------------
+    # 2️⃣ PREDICTION
+    # -------------------------
+    X_pred = pd.DataFrame(
+        [{k: record.get(k, None) for k in feature_order}]
+    ).replace({None: np.nan})
 
-lbw_prob = float(model.predict_proba(X_pred)[0][1])
-lbw_percent = round(lbw_prob * 100, 2)
+    lbw_prob = float(model.predict_proba(X_pred)[0][1])
+    lbw_percent = round(lbw_prob * 100, 2)
 
-st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
+    # -------------------------
+    # 3️⃣ ADD TO RECORD
+    # -------------------------
+    record["LBW_Risk_Probability"] = lbw_prob
+    record["LBW_Risk_Percentage"] = lbw_percent
 
-# =========================
-# SAVE TO GOOGLE SHEET
-# =========================
-record["LBW_Risk_Probability"] = lbw_prob
-record["LBW_Risk_Percentage"] = lbw_percent
-record["form_start_time"] = st.session_state.form_start_time.isoformat()
-record["form_end_time"] = form_end_time.isoformat()
+    # -------------------------
+    # 4️⃣ SAVE TO GOOGLE SHEET
+    # -------------------------
+    worksheet = get_gsheet("LBW_Beneficiary_Data")
+    safe_row = [make_json_safe(v) for v in record.values()]
+    worksheet.append_row(
+        safe_row,
+        value_input_option="USER_ENTERED"
+    )
 
-worksheet = get_gsheet("LBW_Beneficiary_Data")
-safe_row = [make_json_safe(v) for v in record.values()]
-worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
-
-st.success("✅ Saved & Predicted Successfully")
-
-
+    st.success("✅ Saved & Predicted Successfully")
 
 
 
