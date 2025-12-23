@@ -489,7 +489,7 @@ worksheet.append_row(
 )
 
 st.success("✅ Record saved to Google Sheets")
-    st.json(record)
+st.json(record)
 
    
        
