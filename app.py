@@ -16,7 +16,7 @@ def get_gsheet(LBW_Beneficiary_Data, worksheet_name="LBWScores"):
         scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
     client = gspread.authorize(creds)
-    spreadsheet = client.open(sheet_name)
+    spreadsheet = client.open(LBW_Beneficiary_Data)
     worksheet = spreadsheet.worksheet(worksheet_name)
     return worksheet
 
@@ -477,7 +477,7 @@ if st.button("➕ Add / Update Record"):
         df.to_csv(CSV_PATH, index=False)
 
     # ---- GOOGLE SHEETS (STEP-5) ----
-    worksheet = get_gsheet(GSHEET_NAME)
+    worksheet = get_gsheet(LBW_Beneficiary_Data)
     headers = worksheet.row_values(1)
     row = [record.get(h, "") for h in headers]
     worksheet.append_row(row, value_input_option="USER_ENTERED")
