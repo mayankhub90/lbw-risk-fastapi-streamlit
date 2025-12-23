@@ -3,6 +3,24 @@ import pandas as pd
 import math
 import os
 from datetime import datetime, date
+import json
+import joblib
+import numpy as np
+
+# ==========================
+# LOAD MODEL & FEATURES
+# ==========================
+MODEL_PATH = "artifacts/xgb_model.pkl"
+FEATURE_PATH = "artifacts/features.json"
+
+@st.cache_resource
+def load_model_and_features():
+    model = joblib.load(MODEL_PATH)
+    with open(FEATURE_PATH, "r") as f:
+        feature_order = json.load(f)
+    return model, feature_order
+
+model, feature_order = load_model_and_features()
 
 # ================= GOOGLE SHEET SETUP =================
 import gspread
@@ -474,7 +492,9 @@ if st.button("➕ Add / Update Record"):
         "PMMVY Instalment Date": pmmvy_inst1_date,
         "form_start_time": st.session_state.form_start_time.isoformat(),
         "form_end_time": form_end_time.isoformat(),
-        "form_duration_seconds": int((form_end_time - st.session_state.form_start_time).total_seconds())
+        "form_duration_seconds": int((form_end_time - st.session_state.form_start_time).total_seconds()),
+        "LBW_Risk_Probability": lbw_prob,
+        "LBW_Risk_Percentage": lbw_percent
     }
 
 
@@ -491,6 +511,41 @@ if st.button("➕ Add / Update Record"):
 
     st.success("✅ Record saved successfully to Google Sheets")
     st.json(record)
+
+# ==========================
+# PREDICTION
+# ==========================
+
+# Create prediction DataFrame
+X_pred = pd.DataFrame([record])
+
+# Keep ONLY model features
+X_pred = X_pred[feature_order]
+
+# Ensure numeric stability
+X_pred = X_pred.replace({None: np.nan})
+
+# Predict probability
+lbw_prob = model.predict_proba(X_pred)[0][1]
+lbw_percent = round(lbw_prob * 100, 2)
+
+st.subheader("🧠 LBW Risk Prediction")
+
+st.metric(
+    label="Predicted Risk of Low Birth Weight",
+    value=f"{lbw_percent} %"
+)
+
+# Optional risk band
+if lbw_prob < 0.3:
+    risk_band = "🟢 Low Risk"
+elif lbw_prob < 0.6:
+    risk_band = "🟡 Medium Risk"
+else:
+    risk_band = "🔴 High Risk"
+
+st.info(f"Risk Category: **{risk_band}**")
+
 
 
    
