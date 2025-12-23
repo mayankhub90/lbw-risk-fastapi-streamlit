@@ -490,7 +490,9 @@ if st.button("➕ Add / Update Record"):
 # =========================
 # 🔮 PREDICTION
 # =========================
-X_pred = pd.DataFrame([{k: record[k] for k in feature_order}])
+X_pred = pd.DataFrame(
+    [{k: record.get(k, None) for k in feature_order}]
+)
 X_pred = X_pred.replace({None: np.nan})
 
 lbw_prob = float(model.predict_proba(X_pred)[0][1])
