@@ -4,21 +4,6 @@ import math
 import os
 from datetime import datetime, date
 
-#Google Sheet Setup
-import gspread
-from google.oauth2.service_account import Credentials
-def get_gsheet(sheet_name, worksheet_name="LBWScores"):
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
-    client = gspread.authorize(creds)
-    spreadsheet = client.open(sheet_name)
-    worksheet = spreadsheet.worksheet(worksheet_name)
-    return worksheet
-
-
-
 # =====================================================
 # APP CONFIG
 # =====================================================
@@ -479,17 +464,9 @@ if st.button("➕ Add / Update Record"):
             df.to_csv(CSV_PATH, index=False)
 
     st.success("✅ Record saved successfully")
+    st.subheader("🔍 Backend Saved Record")
+    st.json(record)
 
-   # ================= GOOGLE SHEETS WRITE =================
-sheet = get_gsheet(
-    sheet_name="LBW_Beneficiary_Data",
-    worksheet_name="LBWScores"
-)
-
-sheet_headers = sheet.row_values(1)
-row_to_append = [record.get(col, "") for col in sheet_headers]
-
-sheet.append_row(row_to_append, value_input_option="USER_ENTERED")
 
 
    
