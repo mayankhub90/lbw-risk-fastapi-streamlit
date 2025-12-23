@@ -500,18 +500,18 @@ st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
 
 # =========================
-    # SAVE TO GOOGLE SHEET
-    # =========================
-    record["LBW_Risk_Probability"] = lbw_prob
-    record["LBW_Risk_Percentage"] = lbw_percent
-    record["form_start_time"] = st.session_state.form_start_time.isoformat()
-    record["form_end_time"] = form_end_time.isoformat()
+# SAVE TO GOOGLE SHEET
+# =========================
+record["LBW_Risk_Probability"] = lbw_prob
+record["LBW_Risk_Percentage"] = lbw_percent
+record["form_start_time"] = st.session_state.form_start_time.isoformat()
+record["form_end_time"] = form_end_time.isoformat()
 
-    worksheet = get_gsheet("LBW_Beneficiary_Data")
-    safe_row = [make_json_safe(v) for v in record.values()]
-    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+worksheet = get_gsheet("LBW_Beneficiary_Data")
+safe_row = [make_json_safe(v) for v in record.values()]
+worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-    st.success("✅ Saved & Predicted Successfully")
+st.success("✅ Saved & Predicted Successfully")
 
 
 
