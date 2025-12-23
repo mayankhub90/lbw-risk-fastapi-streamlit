@@ -10,13 +10,13 @@ from datetime import datetime, date
 import gspread
 from google.oauth2.service_account import Credentials
 
-def get_gsheet(LBW_Beneficiary_Data, worksheet_name="LBWScores"):
+def get_gsheet(sheet_name, worksheet_name="LBWScores"):
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
         scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
     client = gspread.authorize(creds)
-    spreadsheet = client.open(LBW_Beneficiary_Data)
+    spreadsheet = client.open(sheet_name)
     worksheet = spreadsheet.worksheet(worksheet_name)
     return worksheet
 
@@ -477,7 +477,7 @@ if st.button("➕ Add / Update Record"):
         df.to_csv(CSV_PATH, index=False)
 
     # ---- GOOGLE SHEETS (STEP-5) ----
-    worksheet = get_gsheet(LBW_Beneficiary_Data)
+    worksheet = get_gsheet(sheet_name)
     headers = worksheet.row_values(1)
     row = [record.get(h, "") for h in headers]
     worksheet.append_row(row, value_input_option="USER_ENTERED")
