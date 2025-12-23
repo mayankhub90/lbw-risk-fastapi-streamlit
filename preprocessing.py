@@ -1,103 +1,99 @@
-# preprocessing.py
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-# -------------------------
-# Helper mappings
-# -------------------------
+# =====================================================
+# CATEGORY → NUMERIC MAPPINGS
+# =====================================================
 
-MONTH_MAP = {
-    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
-    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
-    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+HB_MAP = {
+    "severe_anaemia": 0,
+    "moderate_anaemia": 1,
+    "mild_anaemia": 2,
+    "normal": 3
 }
 
-def hb_to_risk(hb):
-    if hb < 6:
-        return "severe"
-    elif hb < 8:
-        return "moderate"
-    elif hb < 11:
-        return "mild"
-    return "normal"
+REG_BUCKET_MAP = {"Early": 0, "Mid": 1, "Late": 2}
+ANC_BUCKET_MAP = {"Early": 0, "Mid": 1, "Late": 2}
 
-def anc_bucket(n):
-    if n == 0:
-        return "none"
-    elif n <= 2:
-        return "low"
-    elif n <= 4:
-        return "adequate"
-    return "high"
+SOCIAL_MEDIA_MAP = {
+    "None": 0,
+    "Low": 1,
+    "Medium": 2,
+    "High": 3
+}
 
-def registration_bucket(days):
-    if days <= 30:
-        return "early"
-    elif days <= 90:
-        return "mid"
-    return "late"
+YES_NO_MAP = {
+    "N": 0,
+    "Y": 1,
+    "O": np.nan,   # Other treated as missing (matches training best practice)
+    "No": 0,
+    "Yes": 1
+}
 
-# -------------------------
-# Main preprocessing
-# -------------------------
+MONTH_MAP = {
+    "January": 1, "February": 2, "March": 3, "April": 4,
+    "May": 5, "June": 6, "July": 7, "August": 8,
+    "September": 9, "October": 10, "November": 11, "December": 12
+}
 
-def preprocess_payload(payload, FEATURES):
-    df = pd.DataFrame([payload])
+TOILET_MAP = {
+    "No facility / open defecation": 0,
+    "Unimproved / unknown": 1,
+    "Pit latrine (basic)": 2,
+    "Improved toilet": 3
+}
 
-    # 🔍 DEBUG – see exactly what we have
-    missing = [f for f in FEATURES if f not in df.columns]
-    if missing:
-        raise ValueError(f"Missing columns before preprocessing: {missing}")
+WATER_MAP = {
+    "Surface/Unprotected": 0,
+    "Delivered / other": 1,
+    "Protected well": 2,
+    "Groundwater – handpump/borewell": 3,
+    "Piped supply": 4
+}
 
+EDU_MAP = {
+    "No schooling": 0,
+    "Primary (1–5)": 1,
+    "Middle (6–8)": 2,
+    "Secondary (9–12)": 3,
+    "Graduate & above": 4
+}
 
-def preprocess_payload(payload: dict, features: list) -> pd.DataFrame:
-    df = pd.DataFrame([payload])
+# =====================================================
+# MAIN PREPROCESS FUNCTION
+# =====================================================
 
-    # --- Hb ---
-    df["measured_HB_risk_bin"] = df["measured_HB"].apply(hb_to_risk)
+def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts raw Streamlit input dataframe into
+    numeric dataframe expected by XGBoost model.
+    """
 
-    # --- Parity ---
-    df["Child order/parity"] = df[["Number of living child at now", "previous_pregnancies"]].max(axis=1) + 1
+    X = df.copy()
 
-    # --- Month ---
-    df["MonthConception"] = df["month_conception"].map(MONTH_MAP)
+    # ---- Ordinal / rule-based encodings ----
+    X["measured_HB_risk_bin"] = X["measured_HB_risk_bin"].map(HB_MAP)
+    X["RegistrationBucket"] = X["RegistrationBucket"].map(REG_BUCKET_MAP)
+    X["ANCBucket"] = X["ANCBucket"].map(ANC_BUCKET_MAP)
+    X["Social_Media_Category"] = X["Social_Media_Category"].map(SOCIAL_MEDIA_MAP)
 
-    # --- BMI ---
-    for i in range(1, 5):
-        w = f"weight_pw{i}"
-        df[f"BMI_PW{i}_Prog"] = np.where(
-            df[w].notna(),
-            df[w] / (df["height"] / 100) ** 2,
-            np.nan
-        )
+    # ---- Binary variables ----
+    X["consume_tobacco"] = X["consume_tobacco"].map(YES_NO_MAP)
+    X["consume_alcohol"] = X["consume_alcohol"].map(YES_NO_MAP)
+    X["Registered for cash transfer scheme: JSY"] = X[
+        "Registered for cash transfer scheme: JSY"
+    ].map(YES_NO_MAP)
+    X["Registered for cash transfer scheme: RAJHSRI"] = X[
+        "Registered for cash transfer scheme: RAJHSRI"
+    ].map(YES_NO_MAP)
 
-    # --- ANC ---
-    df["ANCBucket"] = df["No of ANCs completed"].apply(anc_bucket)
+    # ---- Categorical ordinals ----
+    X["MonthConception"] = X["MonthConception"].map(MONTH_MAP)
+    X["toilet_type_clean"] = X["toilet_type_clean"].map(TOILET_MAP)
+    X["water_source_clean"] = X["water_source_clean"].map(WATER_MAP)
+    X["education_clean"] = X["education_clean"].map(EDU_MAP)
 
-    # --- Registration ---
-    df["RegistrationBucket"] = df["days_lmp_to_registration"].apply(registration_bucket)
+    # ---- Replace remaining None with NaN ----
+    X = X.replace({None: np.nan})
 
-    # --- Counselling ---
-    df["counselling_gap_days"] = df["counselling_visits"] * 30
-
-    # --- Installment timing (proxy) ---
-    df["LMPtoINST1"] = df["days_lmp_to_registration"] + 30
-    df["LMPtoINST2"] = df["days_lmp_to_registration"] + 60
-    df["LMPtoINST3"] = df["days_lmp_to_registration"] + 90
-
-    # --- Log transforms ---
-    df["No. of IFA tablets received/procured in last one month_log1p"] = np.log1p(df["ifa_tablets"])
-    df["No. of calcium tablets consumed in last one month_log1p"] = np.log1p(df["calcium_tablets"])
-
-    # --- Household asset score ---
-    asset_score = (
-        df["has_washing_machine"].astype(int) +
-        df["has_ac_cooler"].astype(int) +
-        df["has_mobile"].astype(int)
-    )
-    df["Household_Assets_Score_log1p"] = np.log1p(asset_score)
-
-    # --- FINAL STRICT ALIGNMENT ---
-    df_final = df[features]
-
-    return df_final
+    return X
