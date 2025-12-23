@@ -479,5 +479,18 @@ if st.button("➕ Add / Update Record"):
             df.to_csv(CSV_PATH, index=False)
 
     st.success("✅ Record saved successfully")
+
+   # ================= GOOGLE SHEETS WRITE =================
+sheet = get_gsheet(
+    sheet_name="LBW_Beneficiary_Data",
+    worksheet_name="LBWScores"
+)
+
+sheet_headers = sheet.row_values(1)
+row_to_append = [record.get(col, "") for col in sheet_headers]
+
+sheet.append_row(row_to_append, value_input_option="USER_ENTERED")
+
+
     st.subheader("🔍 Backend Saved Record")
     st.json(record)
