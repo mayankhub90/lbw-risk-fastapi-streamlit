@@ -7,21 +7,6 @@ import json
 import joblib
 import numpy as np
 
-# ==========================
-# LOAD MODEL & FEATURES
-# ==========================
-MODEL_PATH = "artifacts/xgb_model.pkl"
-FEATURE_PATH = "artifacts/features.json"
-
-@st.cache_resource
-def load_model_and_features():
-    model = joblib.load(MODEL_PATH)
-    with open(FEATURE_PATH, "r") as f:
-        feature_order = json.load(f)
-    return model, feature_order
-
-model, feature_order = load_model_and_features()
-
 # ================= GOOGLE SHEET SETUP =================
 import gspread
 from google.oauth2.service_account import Credentials
@@ -43,6 +28,13 @@ def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
     worksheet = spreadsheet.worksheet(worksheet_name)
     return worksheet
 
+# =========================
+# LOAD MODEL & FEATURES
+# =========================
+model = joblib.load("artifacts/xgb_model.pkl")
+
+with open("artifacts/features.json", "r") as f:
+    feature_order = json.load(f)
 
 # =====================================================
 # APP CONFIG
@@ -493,58 +485,33 @@ if st.button("➕ Add / Update Record"):
         "form_start_time": st.session_state.form_start_time.isoformat(),
         "form_end_time": form_end_time.isoformat(),
         "form_duration_seconds": int((form_end_time - st.session_state.form_start_time).total_seconds()),
-        "LBW_Risk_Probability": lbw_prob,
-        "LBW_Risk_Percentage": lbw_percent
-    }
+   }
 
-# ==========================
-# PREDICTION
-# ==========================
-
-# Create prediction DataFrame
-X_pred = pd.DataFrame([record])
-
-# Keep ONLY model features
-X_pred = X_pred[feature_order]
-
-# Ensure numeric stability
+# =========================
+# 🔮 PREDICTION
+# =========================
+X_pred = pd.DataFrame([{k: record[k] for k in feature_order}])
 X_pred = X_pred.replace({None: np.nan})
 
-# Predict probability
-lbw_prob = model.predict_proba(X_pred)[0][1]
+lbw_prob = float(model.predict_proba(X_pred)[0][1])
 lbw_percent = round(lbw_prob * 100, 2)
 
-st.subheader("🧠 LBW Risk Prediction")
-
-st.metric(
-    label="Predicted Risk of Low Birth Weight",
-    value=f"{lbw_percent} %"
-)
-
-# Optional risk band
-if lbw_prob < 0.3:
-    risk_band = "🟢 Low Risk"
-elif lbw_prob < 0.6:
-    risk_band = "🟡 Medium Risk"
-else:
-    risk_band = "🔴 High Risk"
-
-st.info(f"Risk Category: **{risk_band}**")
+st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
 
-# ================= GOOGLE SHEET WRITE =================
-    GSHEET_NAME = "LBW_Beneficiary_Data"
-    worksheet = get_gsheet(GSHEET_ID)
+# =========================
+    # SAVE TO GOOGLE SHEET
+    # =========================
+    record["LBW_Risk_Probability"] = lbw_prob
+    record["LBW_Risk_Percentage"] = lbw_percent
+    record["form_start_time"] = st.session_state.form_start_time.isoformat()
+    record["form_end_time"] = form_end_time.isoformat()
 
+    worksheet = get_gsheet("LBW_Beneficiary_Data")
     safe_row = [make_json_safe(v) for v in record.values()]
+    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-    worksheet.append_row(
-        safe_row,
-        value_input_option="USER_ENTERED"
-    )
-
-    st.success("✅ Record saved successfully to Google Sheets")
-    st.json(record)
+    st.success("✅ Saved & Predicted Successfully")
 
 
 
