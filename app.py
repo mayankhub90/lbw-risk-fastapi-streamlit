@@ -498,12 +498,15 @@ if st.button("Predict Score"):
         ),
     }
 
+st.write("X_processed columns:", X_processed.columns.tolist())
+st.write("Expected feature_order:", feature_order)
+
 # -------------------------
 # 2️⃣ PREDICTION (FIXED)
 # -------------------------
 
-    X_raw = pd.DataFrame(
-    [{k: record.get(k, None) for k in feature_order}]
+X_raw = pd.DataFrame(
+[{k: record.get(k, None) for k in feature_order}]
 )
 
 X_processed = preprocess_for_model(X_raw)
