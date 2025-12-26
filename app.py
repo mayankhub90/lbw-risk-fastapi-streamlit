@@ -486,7 +486,10 @@ X_raw = pd.DataFrame(
 )
 X_raw = X_raw.replace({None: np.nan})
 
-    
+st.write("🔍 X_processed dtypes")
+st.write(X_processed.dtypes)
+
+
     # 3️⃣ PREDICTION
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
