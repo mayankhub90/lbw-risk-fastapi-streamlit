@@ -482,15 +482,29 @@ if st.button("Predict Score"):
 
 # 2️⃣ MODEL INPUT
 X_raw = pd.DataFrame(
-    [{k: record.get(k, None) for k in features_order}]
-)
-X_raw = X_raw.replace({None: np.nan})
+    [{k: record.get(k, None) for k in feature_order}]
+).replace({None: np.nan})
 
-st.write("🔍 X_processed dtypes")
+# -------------------------
+# Preprocess
+# -------------------------
+X_processed = preprocess_for_model(X_raw)
+
+# ✅ NOW this is valid
 st.write(X_processed.dtypes)
 
 
 # 3️⃣ PREDICTION
+# -------------------------
+X_raw = pd.DataFrame(
+    [{k: record.get(k, None) for k in feature_order}]
+).replace({None: np.nan})
+
+X_processed = preprocess_for_model(X_raw)
+
+# Debug (optional)
+st.write("Processed dtypes:", X_processed.dtypes)
+
 lbw_prob = float(model.predict_proba(X_processed)[0][1])
 lbw_percent = round(lbw_prob * 100, 2)
 
