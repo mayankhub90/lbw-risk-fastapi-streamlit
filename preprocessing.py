@@ -1,9 +1,7 @@
 import pandas as pd
 import numpy as np
 
-# -------------------------
-# Categorical columns EXACTLY as model expects
-# -------------------------
+# Categorical features used in training
 CATEGORICAL_COLS = [
     "measured_HB_risk_bin",
     "MonthConception",
@@ -20,9 +18,7 @@ CATEGORICAL_COLS = [
     "Registered for cash transfer scheme: RAJHSRI",
 ]
 
-# -------------------------
-# Numeric columns
-# -------------------------
+# Numeric features
 NUMERIC_COLS = [
     "Beneficiary age",
     "Child order/parity",
@@ -45,18 +41,15 @@ NUMERIC_COLS = [
     "JSY-Number of installment received",
 ]
 
-# -------------------------
-# Main preprocessing function
-# -------------------------
 def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # ---------- Numeric coercion ----------
+    # ---- numeric coercion ----
     for col in NUMERIC_COLS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # ---------- Categorical coercion ----------
+    # ---- categorical → codes (CRITICAL FIX) ----
     for col in CATEGORICAL_COLS:
         if col in df.columns:
             df[col] = (
@@ -64,13 +57,13 @@ def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
                 .astype(str)
                 .fillna("Unknown")
                 .astype("category")
+                .cat.codes
+                .astype("int32")
             )
 
-    # ---------- FINAL SAFETY CHECK ----------
-    bad_cols = df.select_dtypes(include=["object"]).columns.tolist()
-    if bad_cols:
-        raise ValueError(
-            f"❌ Object dtype columns found (XGBoost will fail): {bad_cols}"
-        )
+    # ---- final safety ----
+    bad = df.select_dtypes(include=["object", "category"]).columns.tolist()
+    if bad:
+        raise ValueError(f"❌ Unsafe dtypes still present: {bad}")
 
     return df
