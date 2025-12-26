@@ -37,8 +37,8 @@ import joblib
 
 model = joblib.load("artifacts/xgb_model.pkl")
 
-with open("artifacts/feature_order.json") as f:
-    feature_order = json.load(f)
+with open("artifacts/features.json") as f:
+    features = json.load(f)
 
 
 # =====================================================
