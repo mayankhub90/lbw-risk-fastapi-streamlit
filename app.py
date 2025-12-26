@@ -485,63 +485,47 @@ if st.button("Predict Score"):
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
         "JSY-Number of installment received": jsy_inst,
-        "height": height_cm,
-        "LMP": lmp_date,
         "Social_Media_Category": Social_Media_Category,
-        "Type of Social Media Enrolled In": Type_of_Social_Media_Enrolled_In,
-        "Registration Date": registration_date,
-        "PMMVY Instalment Date": pmmvy_inst1_date,
-        "form_start_time": st.session_state.form_start_time.isoformat(),
-        "form_end_time": form_end_time.isoformat(),
-        "form_duration_seconds": int(
-            (form_end_time - st.session_state.form_start_time).total_seconds()
-        ),
     }
 
-# -------------------------
-# 2️⃣ PREDICTION (FIXED)
-# -------------------------
+    # -------------------------
+    # 2️⃣ BUILD MODEL INPUT
+    # -------------------------
+    X_raw = pd.DataFrame([{k: record.get(k, None) for k in feature_order}])
 
-# Build raw frame
-X_raw = pd.DataFrame([{k: record.get(k, None) for k in feature_order}])
+    # Drop any datetime columns defensively
+    datetime_cols = X_raw.select_dtypes(include=["datetime64[ns]"]).columns
+    X_raw = X_raw.drop(columns=datetime_cols, errors="ignore")
 
-# Drop datetime just in case
-datetime_cols = X_raw.select_dtypes(include=["datetime64[ns]"]).columns
-X_raw = X_raw.drop(columns=datetime_cols, errors="ignore")
+    # Preprocess
+    X_processed = preprocess_for_model(X_raw)
 
-# Apply preprocessing
-X_processed = preprocess_for_model(X_raw)
-
-# Force correct dtypes
-for col in X_processed.columns:
-    if X_processed[col].dtype == "object":
-        X_processed[col] = X_processed[col].astype("category")
-    elif not pd.api.types.is_categorical_dtype(X_processed[col]):
-        X_processed[col] = pd.to_numeric(X_processed[col], errors="coerce")
-
-# Final check
-bad_cols = X_processed.select_dtypes(exclude=["number", "category"]).columns
-assert len(bad_cols) == 0, f"Invalid columns: {bad_cols.tolist()}"
-
-# Predict
-lbw_prob = float(model.predict_proba(X_processed)[0][1])
-
-
+    # Force valid dtypes for XGBoost
+    for col in X_processed.columns:
+        if X_processed[col].dtype == "object":
+            X_processed[col] = X_processed[col].astype("category")
+        elif not pd.api.types.is_categorical_dtype(X_processed[col]):
+            X_processed[col] = pd.to_numeric(X_processed[col], errors="coerce")
 
     # -------------------------
-    # 3️⃣ ADD TO RECORD
+    # 3️⃣ PREDICTION
+    # -------------------------
+    lbw_prob = float(model.predict_proba(X_processed)[0][1])
+    lbw_percent = round(lbw_prob * 100, 2)
+
+    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+
+    # -------------------------
+    # 4️⃣ ADD TO RECORD
     # -------------------------
     record["LBW_Risk_Probability"] = lbw_prob
     record["LBW_Risk_Percentage"] = lbw_percent
 
     # -------------------------
-    # 4️⃣ SAVE TO GOOGLE SHEET
+    # 5️⃣ SAVE TO GOOGLE SHEET
     # -------------------------
     worksheet = get_gsheet("LBW_Beneficiary_Data")
     safe_row = [make_json_safe(v) for v in record.values()]
-    worksheet.append_row(
-        safe_row,
-        value_input_option="USER_ENTERED"
-    )
+    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-    st.success("✅ Saved & Predicted Successfully")
+    st.success("✅ Saved & Predicted Successfully")  
