@@ -38,7 +38,7 @@ import joblib
 model = joblib.load("artifacts/xgb_model.pkl")
 
 with open("artifacts/features.json") as f:
-    features = json.load(f)
+    features_order = json.load(f)
 
 
 # =====================================================
@@ -481,9 +481,12 @@ if st.button("Predict Score"):
     }
 
     # 2️⃣ MODEL INPUT
-    X_raw = pd.DataFrame([{k: record.get(k) for k in features}])
-    X_processed = preprocess_for_model(X_raw)
+X_raw = pd.DataFrame(
+    [{k: record.get(k, None) for k in feature_order}]
+)
+X_raw = X_raw.replace({None: np.nan})
 
+    
     # 3️⃣ PREDICTION
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
