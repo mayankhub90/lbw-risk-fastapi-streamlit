@@ -490,6 +490,8 @@ X_raw = pd.DataFrame(
 # =========================
 X_processed = preprocess_for_model(X_raw)
 
+# (Optional debug – remove later)
+st.write("Model input dtypes:", X_processed.dtypes)
 
 # =========================
 # 📈 PREDICTION
