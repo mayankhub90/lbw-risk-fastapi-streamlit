@@ -32,8 +32,6 @@ def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
 # LOAD MODEL & FEATURES
 # =========================
 from preprocessing import preprocess_for_model
-import json
-import joblib
 
 model = joblib.load("artifacts/xgb_model.pkl")
 
@@ -496,19 +494,23 @@ st.write(X_processed.dtypes)
 
 # 3️⃣ PREDICTION
 # -------------------------
+# -------------------------
+# 🔮 PREDICTION
+# -------------------------
 X_raw = pd.DataFrame(
-    [{k: record.get(k, None) for k in feature_order}]
+    [{k: record.get(k, None) for k in features_order}]
 ).replace({None: np.nan})
 
 X_processed = preprocess_for_model(X_raw)
 
-# Debug (optional)
-st.write("Processed dtypes:", X_processed.dtypes)
+# Debug once (can remove later)
+st.write("Model input dtypes:", X_processed.dtypes)
 
 lbw_prob = float(model.predict_proba(X_processed)[0][1])
 lbw_percent = round(lbw_prob * 100, 2)
 
 st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+
 
 # 4️⃣ ADD RESULT
 record["LBW_Risk_Probability"] = lbw_prob
