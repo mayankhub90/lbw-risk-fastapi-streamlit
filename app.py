@@ -500,6 +500,7 @@ if st.button("Predict Score"):
 
 st.write("X_processed columns:", X_processed.columns.tolist())
 st.write("Expected feature_order:", feature_order)
+st.write(X_processed.dtypes)
 
 # -------------------------
 # 2️⃣ PREDICTION (FIXED)
