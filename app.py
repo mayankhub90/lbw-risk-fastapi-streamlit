@@ -442,18 +442,10 @@ LMPtoINST3 = None
 # ✅ SUBMIT
 # =====================================================
 if st.button("Predict Score"):
-
     form_end_time = datetime.now()
 
-    # -------------------------
     # 1️⃣ BUILD RECORD
-    # -------------------------
     record = {
-        "Beneficiary Name": beneficiary_name,
-        "State": state,
-        "District": district,
-        "Block": block,
-        "Village": village,
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
@@ -477,55 +469,35 @@ if st.button("Predict Score"):
         "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs_log1p,
         "No. of calcium tablets consumed in last one month_log1p": calcium_tabs_log1p,
         "Food_Groups_Category": food_group,
+        "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
         "toilet_type_clean": toilet_type_clean,
         "water_source_clean": water_source_clean,
         "education_clean": education_clean,
-        "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
+        "Social_Media_Category": Social_Media_Category,
         "Registered for cash transfer scheme: JSY": jsy_reg,
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
         "JSY-Number of installment received": jsy_inst,
-        "Social_Media_Category": Social_Media_Category,
     }
 
-    # -------------------------
-    # 2️⃣ BUILD MODEL INPUT
-    # -------------------------
-    X_raw = pd.DataFrame([{k: record.get(k, None) for k in feature_order}])
-
-    # Drop any datetime columns defensively
-    datetime_cols = X_raw.select_dtypes(include=["datetime64[ns]"]).columns
-    X_raw = X_raw.drop(columns=datetime_cols, errors="ignore")
-
-    # Preprocess
+    # 2️⃣ MODEL INPUT
+    X_raw = pd.DataFrame([{k: record.get(k) for k in feature_order}])
     X_processed = preprocess_for_model(X_raw)
 
-    # Force valid dtypes for XGBoost
-    for col in X_processed.columns:
-        if X_processed[col].dtype == "object":
-            X_processed[col] = X_processed[col].astype("category")
-        elif not pd.api.types.is_categorical_dtype(X_processed[col]):
-            X_processed[col] = pd.to_numeric(X_processed[col], errors="coerce")
-
-    # -------------------------
     # 3️⃣ PREDICTION
-    # -------------------------
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
 
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
-    # -------------------------
-    # 4️⃣ ADD TO RECORD
-    # -------------------------
+    # 4️⃣ ADD RESULT
     record["LBW_Risk_Probability"] = lbw_prob
     record["LBW_Risk_Percentage"] = lbw_percent
 
-    # -------------------------
-    # 5️⃣ SAVE TO GOOGLE SHEET
-    # -------------------------
+    # 5️⃣ SAVE
     worksheet = get_gsheet("LBW_Beneficiary_Data")
     safe_row = [make_json_safe(v) for v in record.values()]
     worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-    st.success("✅ Saved & Predicted Successfully")  
+    st.success("✅ Saved & Predicted Successfully")
+
