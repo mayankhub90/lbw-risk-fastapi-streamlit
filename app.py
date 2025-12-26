@@ -480,7 +480,7 @@ if st.button("Predict Score"):
         "JSY-Number of installment received": jsy_inst,
     }
 
-    # 2️⃣ MODEL INPUT
+# 2️⃣ MODEL INPUT
 X_raw = pd.DataFrame(
     [{k: record.get(k, None) for k in feature_order}]
 )
@@ -490,4 +490,21 @@ st.write("🔍 X_processed dtypes")
 st.write(X_processed.dtypes)
 
 
- 
+# 3️⃣ PREDICTION
+lbw_prob = float(model.predict_proba(X_processed)[0][1])
+lbw_percent = round(lbw_prob * 100, 2)
+
+st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+
+# 4️⃣ ADD RESULT
+record["LBW_Risk_Probability"] = lbw_prob
+record["LBW_Risk_Percentage"] = lbw_percent
+
+# 5️⃣ SAVE
+worksheet = get_gsheet("LBW_Beneficiary_Data")
+safe_row = [make_json_safe(v) for v in record.values()]
+worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+
+st.success("✅ Saved & Predicted Successfully")
+
+
