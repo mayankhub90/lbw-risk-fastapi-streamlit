@@ -481,14 +481,11 @@ if st.button("Predict Score"):
         "JSY-Number of installment received": jsy_inst,
     }
 
-    # -------------------------
-    # 2️⃣ MODEL INPUT (SAFE)
-    # -------------------------
-    X_raw = pd.DataFrame(
-        [{k: record.get(k, None) for k in features_order}]
-    ).replace({None: np.nan})
-
-    X_processed = preprocess_for_model(X_raw)
+# -------------------------
+# 2️⃣ MODEL INPUT (SAFE)
+# -------------------------
+X_raw = pd.DataFrame([{k: record.get(k, None) for k in features_order}]).replace({None: np.nan})
+X_processed = preprocess_for_model(X_raw)
 
 # (Optional debug – remove later)
 st.write("Final model input dtypes:")
