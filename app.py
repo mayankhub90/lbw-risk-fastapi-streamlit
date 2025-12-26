@@ -478,49 +478,45 @@ if st.button("Predict Score"):
         "JSY-Number of installment received": jsy_inst,
     }
 
-# 2️⃣ MODEL INPUT
+# =========================
+# 🔮 MODEL INPUT
+# =========================
 X_raw = pd.DataFrame(
     [{k: record.get(k, None) for k in features_order}]
 ).replace({None: np.nan})
 
-# -------------------------
-# Preprocess
-# -------------------------
+# =========================
+# 🧼 PREPROCESS
+# =========================
 X_processed = preprocess_for_model(X_raw)
 
-# ✅ NOW this is valid
-st.write(X_processed.dtypes)
-
-
-# 3️⃣ PREDICTION
-# -------------------------
-# -------------------------
-# 🔮 PREDICTION
-# -------------------------
-X_raw = pd.DataFrame(
-    [{k: record.get(k, None) for k in features_order}]
-).replace({None: np.nan})
-
-X_processed = preprocess_for_model(X_raw)
-
-# Debug once (can remove later)
+# (Optional debug – remove later)
 st.write("Model input dtypes:", X_processed.dtypes)
 
+# =========================
+# 📈 PREDICTION
+# =========================
 lbw_prob = float(model.predict_proba(X_processed)[0][1])
 lbw_percent = round(lbw_prob * 100, 2)
 
 st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
-
-# 4️⃣ ADD RESULT
+# =========================
+# 🧾 ADD RESULT TO RECORD
+# =========================
 record["LBW_Risk_Probability"] = lbw_prob
 record["LBW_Risk_Percentage"] = lbw_percent
 
-# 5️⃣ SAVE
+# =========================
+# 💾 SAVE TO GOOGLE SHEET
+# =========================
 worksheet = get_gsheet("LBW_Beneficiary_Data")
+
 safe_row = [make_json_safe(v) for v in record.values()]
-worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+
+worksheet.append_row(
+    safe_row,
+    value_input_option="USER_ENTERED"
+)
 
 st.success("✅ Saved & Predicted Successfully")
-
-
