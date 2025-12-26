@@ -436,13 +436,16 @@ LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date else None
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
 LMPtoINST3 = None
 
-# =====================================================
-# ✅ SUBMIT
-# =====================================================
+# ==========================
+# ✅ SUBMIT & PREDICT
+# ==========================
 if st.button("Predict Score"):
+
     form_end_time = datetime.now()
 
+    # -------------------------
     # 1️⃣ BUILD RECORD
+    # -------------------------
     record = {
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
@@ -478,47 +481,41 @@ if st.button("Predict Score"):
         "JSY-Number of installment received": jsy_inst,
     }
 
-# =========================
-# 🔮 MODEL INPUT
-# =========================
-X_raw = pd.DataFrame(
-    [{k: record.get(k, None) for k in features_order}]
-).replace({None: np.nan})
+    # -------------------------
+    # 2️⃣ MODEL INPUT (SAFE)
+    # -------------------------
+    X_raw = pd.DataFrame(
+        [{k: record.get(k, None) for k in features_order}]
+    ).replace({None: np.nan})
 
-# =========================
-# 🧼 PREPROCESS
-# =========================
-X_processed = preprocess_for_model(X_raw)
+    X_processed = preprocess_for_model(X_raw)
 
 # (Optional debug – remove later)
 st.write("Final model input dtypes:")
 st.write(X_processed.dtypes)
 
+    
+    # -------------------------
+    # 3️⃣ PREDICTION
+    # -------------------------
+    lbw_prob = float(model.predict_proba(X_processed)[0][1])
+    lbw_percent = round(lbw_prob * 100, 2)
 
-# =========================
-# 📈 PREDICTION
-# =========================
-lbw_prob = float(model.predict_proba(X_processed)[0][1])
-lbw_percent = round(lbw_prob * 100, 2)
+    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
-st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+    # -------------------------
+    # 4️⃣ SAVE RESULT
+    # -------------------------
+    record["LBW_Risk_Probability"] = lbw_prob
+    record["LBW_Risk_Percentage"] = lbw_percent
 
-# =========================
-# 🧾 ADD RESULT TO RECORD
-# =========================
-record["LBW_Risk_Probability"] = lbw_prob
-record["LBW_Risk_Percentage"] = lbw_percent
+    worksheet = get_gsheet("LBW_Beneficiary_Data")
+    safe_row = [make_json_safe(v) for v in record.values()]
+    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-# =========================
-# 💾 SAVE TO GOOGLE SHEET
-# =========================
-worksheet = get_gsheet("LBW_Beneficiary_Data")
+    st.success("✅ Saved & Predicted Successfully")
 
-safe_row = [make_json_safe(v) for v in record.values()]
 
-worksheet.append_row(
-    safe_row,
-    value_input_option="USER_ENTERED"
-)
 
-st.success("✅ Saved & Predicted Successfully")
+
+
