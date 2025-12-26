@@ -31,10 +31,15 @@ def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
 # =========================
 # LOAD MODEL & FEATURES
 # =========================
+from preprocessing import preprocess_for_model
+import json
+import joblib
+
 model = joblib.load("artifacts/xgb_model.pkl")
 
-with open("artifacts/features.json", "r") as f:
+with open("artifacts/feature_order.json") as f:
     feature_order = json.load(f)
+
 
 # =====================================================
 # APP CONFIG
@@ -493,25 +498,19 @@ if st.button("Predict Score"):
         ),
     }
 
-   # -------------------------
-    # 2️⃣ PREDICTION (FIXED)
-    # -------------------------
-    from preprocessing import preprocess_for_model
-    import numpy as np
+# -------------------------
+# 2️⃣ PREDICTION (FIXED)
+# -------------------------
 
-    # Build model input strictly using training feature order
     X_raw = pd.DataFrame(
-        [{k: record.get(k, None) for k in feature_order}]
-    )
+    [{k: record.get(k, None) for k in feature_order}]
+)
 
-    # Apply preprocessing (ENCODING HAPPENS HERE)
-    X_processed = preprocess_for_model(X_raw)
+X_processed = preprocess_for_model(X_raw)
 
-    # Predict
-    lbw_prob = float(model.predict_proba(X_processed)[0][1])
-    lbw_percent = round(lbw_prob * 100, 2)
+lbw_prob = float(model.predict_proba(X_processed)[0][1])
+lbw_percent = round(lbw_prob * 100, 2)
 
-    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
     # -------------------------
     # 3️⃣ ADD TO RECORD
