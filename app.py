@@ -498,22 +498,34 @@ if st.button("Predict Score"):
         ),
     }
 
-st.write("X_processed columns:", X_processed.columns.tolist())
-st.write("Expected feature_order:", feature_order)
-st.write(X_processed.dtypes)
-
 # -------------------------
 # 2️⃣ PREDICTION (FIXED)
 # -------------------------
 
-X_raw = pd.DataFrame(
-[{k: record.get(k, None) for k in feature_order}]
-)
+# Build raw frame
+X_raw = pd.DataFrame([{k: record.get(k, None) for k in feature_order}])
 
+# Drop datetime just in case
+datetime_cols = X_raw.select_dtypes(include=["datetime64[ns]"]).columns
+X_raw = X_raw.drop(columns=datetime_cols, errors="ignore")
+
+# Apply preprocessing
 X_processed = preprocess_for_model(X_raw)
 
+# Force correct dtypes
+for col in X_processed.columns:
+    if X_processed[col].dtype == "object":
+        X_processed[col] = X_processed[col].astype("category")
+    elif not pd.api.types.is_categorical_dtype(X_processed[col]):
+        X_processed[col] = pd.to_numeric(X_processed[col], errors="coerce")
+
+# Final check
+bad_cols = X_processed.select_dtypes(exclude=["number", "category"]).columns
+assert len(bad_cols) == 0, f"Invalid columns: {bad_cols.tolist()}"
+
+# Predict
 lbw_prob = float(model.predict_proba(X_processed)[0][1])
-lbw_percent = round(lbw_prob * 100, 2)
+
 
 
     # -------------------------
