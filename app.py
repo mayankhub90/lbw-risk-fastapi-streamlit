@@ -38,7 +38,6 @@ model = joblib.load("artifacts/xgb_model.pkl")
 with open("artifacts/features.json") as f:
     features_order = json.load(f)
 
-
 # =====================================================
 # APP CONFIG
 # =====================================================
@@ -441,12 +440,12 @@ LMPtoINST3 = None
 # ==========================
 if st.button("Predict Score"):
 
-    form_end_time = datetime.now()
+form_end_time = datetime.now()
 
-    # -------------------------
-    # 1️⃣ BUILD RECORD
-    # -------------------------
-    record = {
+# -------------------------
+# 1️⃣ BUILD RECORD
+# -------------------------
+record = {
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
@@ -479,7 +478,7 @@ if st.button("Predict Score"):
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
         "JSY-Number of installment received": jsy_inst,
-    }
+}
 
 # -------------------------
 # 2️⃣ MODEL INPUT (SAFE)
@@ -490,29 +489,23 @@ X_processed = preprocess_for_model(X_raw)
 # (Optional debug – remove later)
 st.write("Final model input dtypes:")
 st.write(X_processed.dtypes)
-
     
-    # -------------------------
-    # 3️⃣ PREDICTION
-    # -------------------------
-    lbw_prob = float(model.predict_proba(X_processed)[0][1])
-    lbw_percent = round(lbw_prob * 100, 2)
+# -------------------------
+# 3️⃣ PREDICTION
+# -------------------------
+lbw_prob = float(model.predict_proba(X_processed)[0][1])
+lbw_percent = round(lbw_prob * 100, 2)
 
-    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
-    # -------------------------
-    # 4️⃣ SAVE RESULT
-    # -------------------------
-    record["LBW_Risk_Probability"] = lbw_prob
-    record["LBW_Risk_Percentage"] = lbw_percent
+# -------------------------
+# 4️⃣ SAVE RESULT
+# -------------------------
+record["LBW_Risk_Probability"] = lbw_prob
+record["LBW_Risk_Percentage"] = lbw_percent
 
-    worksheet = get_gsheet("LBW_Beneficiary_Data")
-    safe_row = [make_json_safe(v) for v in record.values()]
-    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+worksheet = get_gsheet("LBW_Beneficiary_Data")
+safe_row = [make_json_safe(v) for v in record.values()]
+worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
-    st.success("✅ Saved & Predicted Successfully")
-
-
-
-
-
+st.success("✅ Saved & Predicted Successfully")
