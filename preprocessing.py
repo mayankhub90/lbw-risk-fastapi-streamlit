@@ -1,99 +1,109 @@
 import numpy as np
 import pandas as pd
 
-# =====================================================
-# CATEGORY → NUMERIC MAPPINGS
-# =====================================================
-
-HB_MAP = {
-    "severe_anaemia": 0,
-    "moderate_anaemia": 1,
-    "mild_anaemia": 2,
-    "normal": 3
-}
-
-REG_BUCKET_MAP = {"Early": 0, "Mid": 1, "Late": 2}
-ANC_BUCKET_MAP = {"Early": 0, "Mid": 1, "Late": 2}
-
-SOCIAL_MEDIA_MAP = {
-    "None": 0,
-    "Low": 1,
-    "Medium": 2,
-    "High": 3
-}
-
-YES_NO_MAP = {
-    "N": 0,
-    "Y": 1,
-    "O": np.nan,   # Other treated as missing (matches training best practice)
-    "No": 0,
-    "Yes": 1
-}
-
-MONTH_MAP = {
-    "January": 1, "February": 2, "March": 3, "April": 4,
-    "May": 5, "June": 6, "July": 7, "August": 8,
-    "September": 9, "October": 10, "November": 11, "December": 12
-}
-
-TOILET_MAP = {
-    "No facility / open defecation": 0,
-    "Unimproved / unknown": 1,
-    "Pit latrine (basic)": 2,
-    "Improved toilet": 3
-}
-
-WATER_MAP = {
-    "Surface/Unprotected": 0,
-    "Delivered / other": 1,
-    "Protected well": 2,
-    "Groundwater – handpump/borewell": 3,
-    "Piped supply": 4
-}
-
-EDU_MAP = {
-    "No schooling": 0,
-    "Primary (1–5)": 1,
-    "Middle (6–8)": 2,
-    "Secondary (9–12)": 3,
-    "Graduate & above": 4
-}
-
-# =====================================================
-# MAIN PREPROCESS FUNCTION
-# =====================================================
-
 def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Converts raw Streamlit input dataframe into
-    numeric dataframe expected by XGBoost model.
-    """
+    df = df.copy()
 
-    X = df.copy()
+    # --------------------------------------------------
+    # 1. WATER SOURCE CLEANING (Step 3)
+    # --------------------------------------------------
+    water_map = {
+        "Piped into dwelling": "Piped supply (home/yard/stand)",
+        "Piped into yard/plot": "Piped supply (home/yard/stand)",
+        "Public tap/standpipe": "Piped supply (home/yard/stand)",
+        "Hand pump": "Groundwater – handpump/borewell",
+        "Tube/borewell": "Groundwater – handpump/borewell",
+        "Protected well": "Protected well",
+        "Unprotected well": "Surface/Unprotected source",
+        "River/dam/lake/pond/canal/irrigation": "Surface/Unprotected source",
+        "Tanker/truck": "Delivered / other",
+        "Cart with small tank": "Delivered / other",
+        "Others": "Delivered / other",
+    }
 
-    # ---- Ordinal / rule-based encodings ----
-    X["measured_HB_risk_bin"] = X["measured_HB_risk_bin"].map(HB_MAP)
-    X["RegistrationBucket"] = X["RegistrationBucket"].map(REG_BUCKET_MAP)
-    X["ANCBucket"] = X["ANCBucket"].map(ANC_BUCKET_MAP)
-    X["Social_Media_Category"] = X["Social_Media_Category"].map(SOCIAL_MEDIA_MAP)
+    water_order = [
+        "Piped supply (home/yard/stand)",
+        "Groundwater – handpump/borewell",
+        "Protected well",
+        "Surface/Unprotected source",
+        "Delivered / other",
+    ]
 
-    # ---- Binary variables ----
-    X["consume_tobacco"] = X["consume_tobacco"].map(YES_NO_MAP)
-    X["consume_alcohol"] = X["consume_alcohol"].map(YES_NO_MAP)
-    X["Registered for cash transfer scheme: JSY"] = X[
-        "Registered for cash transfer scheme: JSY"
-    ].map(YES_NO_MAP)
-    X["Registered for cash transfer scheme: RAJHSRI"] = X[
-        "Registered for cash transfer scheme: RAJHSRI"
-    ].map(YES_NO_MAP)
+    if "water_source_clean" in df.columns:
+        df["water_source_clean"] = pd.Categorical(
+            df["water_source_clean"].fillna("Delivered / other"),
+            categories=water_order,
+            ordered=True
+        )
 
-    # ---- Categorical ordinals ----
-    X["MonthConception"] = X["MonthConception"].map(MONTH_MAP)
-    X["toilet_type_clean"] = X["toilet_type_clean"].map(TOILET_MAP)
-    X["water_source_clean"] = X["water_source_clean"].map(WATER_MAP)
-    X["education_clean"] = X["education_clean"].map(EDU_MAP)
+    # --------------------------------------------------
+    # 2. EDUCATION CLEANING (Step 4)
+    # --------------------------------------------------
+    edu_order = [
+        "No schooling",
+        "Primary (1–5)",
+        "Middle (6–8)",
+        "Secondary (9–12)",
+        "Graduate & above"
+    ]
 
-    # ---- Replace remaining None with NaN ----
-    X = X.replace({None: np.nan})
+    if "education_clean" in df.columns:
+        df["education_clean"] = pd.Categorical(
+            df["education_clean"].fillna("No schooling"),
+            categories=edu_order,
+            ordered=True
+        )
 
-    return X
+    # --------------------------------------------------
+    # 3. TOILET TYPE (Step 5)
+    # --------------------------------------------------
+    toilet_order = [
+        "Improved toilet",
+        "Pit latrine (basic)",
+        "Unimproved / unknown",
+        "No facility / open defecation"
+    ]
+
+    if "toilet_type_clean" in df.columns:
+        df["toilet_type_clean"] = pd.Categorical(
+            df["toilet_type_clean"].fillna("Unimproved / unknown"),
+            categories=toilet_order,
+            ordered=True
+        )
+
+    # --------------------------------------------------
+    # 4. Hb RISK BIN (Step 16 logic)
+    # --------------------------------------------------
+    if "measured_HB_risk_bin" in df.columns:
+        df["measured_HB_risk_bin"] = pd.Categorical(
+            df["measured_HB_risk_bin"],
+            categories=["severe_anaemia", "moderate_anaemia", "mild_anaemia", "normal"],
+            ordered=True
+        )
+
+    # --------------------------------------------------
+    # 5. SOCIAL MEDIA CATEGORY
+    # --------------------------------------------------
+    if "Social_Media_Category" in df.columns:
+        df["Social_Media_Category"] = df["Social_Media_Category"].astype("category")
+
+    # --------------------------------------------------
+    # 6. FORCE CATEGORICAL TYPES
+    # --------------------------------------------------
+    categorical_cols = [
+        "MonthConception",
+        "consume_tobacco",
+        "consume_alcohol",
+        "Status of current chewing of tobacco",
+        "RegistrationBucket",
+        "ANCBucket",
+        "Registered for cash transfer scheme: JSY",
+        "Registered for cash transfer scheme: RAJHSRI",
+        "Child order/parity"
+    ]
+
+    for col in categorical_cols:
+        if col in df.columns:
+            df[col] = df[col].astype("category")
+
+    return df
