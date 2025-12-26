@@ -481,7 +481,7 @@ if st.button("Predict Score"):
     }
 
     # 2️⃣ MODEL INPUT
-    X_raw = pd.DataFrame([{k: record.get(k) for k in features.json}])
+    X_raw = pd.DataFrame([{k: record.get(k) for k in features}])
     X_processed = preprocess_for_model(X_raw)
 
     # 3️⃣ PREDICTION
