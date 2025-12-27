@@ -485,14 +485,14 @@ if clicked:
     # 2️⃣ MODEL INPUT
     # -------------------------
     X_raw = pd.DataFrame(
-        [{k: record.get(k, np.nan) for k in features_order}]
+    [{k: record.get(k, np.nan) for k in features_order}]
     )
 
     X_processed = preprocess_for_model(X_raw)
 
-    # -------------------------
-    # 3️⃣ PREDICTION
-    # -------------------------
+    # Debug ONCE
+    st.write("Model input dtypes:", X_processed.dtypes)
+
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
 
