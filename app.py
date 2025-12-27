@@ -439,7 +439,6 @@ LMPtoINST3 = None
 # ✅ SUBMIT / PREDICT
 # =====================================================
 if st.button("Predict Score"):
-
     form_end_time = datetime.now()
 
     # -------------------------
