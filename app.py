@@ -435,3 +435,78 @@ LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date else None
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
 LMPtoINST3 = None
 
+# =====================================================
+# ✅ SUBMIT / PREDICT
+# =====================================================
+clicked = st.button("Predict Score")
+
+if clicked:
+    form_end_time = datetime.now()
+
+    # -------------------------
+    # 1️⃣ BUILD RECORD
+    # -------------------------
+    record = {
+        "Beneficiary age": beneficiary_age,
+        "measured_HB_risk_bin": measured_HB_risk_bin,
+        "Child order/parity": parity,
+        "Number of living child at now": living_children,
+        "MonthConception": month_conception,
+        "BMI_PW1_Prog": BMI_PW1_Prog,
+        "BMI_PW2_Prog": BMI_PW2_Prog,
+        "BMI_PW3_Prog": BMI_PW3_Prog,
+        "BMI_PW4_Prog": BMI_PW4_Prog,
+        "consume_tobacco": consume_tobacco,
+        "Status of current chewing of tobacco": chewing_status,
+        "consume_alcohol": consume_alcohol,
+        "RegistrationBucket": registration_bucket,
+        "counselling_gap_days": counselling_gap_days,
+        "ANCBucket": ANCBucket,
+        "LMPtoINST1": LMPtoINST1,
+        "LMPtoINST2": LMPtoINST2,
+        "LMPtoINST3": LMPtoINST3,
+        "No of ANCs completed": anc_completed,
+        "Service received during last ANC: TT Injection given": tt_given,
+        "No. of IFA tablets received/procured in last one month_log1p": ifa_tabs_log1p,
+        "No. of calcium tablets consumed in last one month_log1p": calcium_tabs_log1p,
+        "Food_Groups_Category": food_group,
+        "Household_Assets_Score_log1p": Household_Assets_Score_log1p,
+        "toilet_type_clean": toilet_type_clean,
+        "water_source_clean": water_source_clean,
+        "education_clean": education_clean,
+        "Social_Media_Category": Social_Media_Category,
+        "Registered for cash transfer scheme: JSY": jsy_reg,
+        "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
+        "PMMVY-Number of installment received": pmmvy_inst,
+        "JSY-Number of installment received": jsy_inst,
+    }
+
+    # -------------------------
+    # 2️⃣ MODEL INPUT
+    # -------------------------
+    X_raw = pd.DataFrame(
+        [{k: record.get(k, np.nan) for k in features_order}]
+    )
+
+    X_processed = preprocess_for_model(X_raw)
+
+    # -------------------------
+    # 3️⃣ PREDICTION
+    # -------------------------
+    lbw_prob = float(model.predict_proba(X_processed)[0][1])
+    lbw_percent = round(lbw_prob * 100, 2)
+
+    st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+
+    # -------------------------
+    # 4️⃣ SAVE RESULT
+    # -------------------------
+    record["LBW_Risk_Probability"] = lbw_prob
+    record["LBW_Risk_Percentage"] = lbw_percent
+    record["form_end_time"] = form_end_time.isoformat()
+
+    worksheet = get_gsheet("LBW_Beneficiary_Data")
+    safe_row = [make_json_safe(v) for v in record.values()]
+    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+
+    st.success("✅ Saved & Predicted Successfully")
