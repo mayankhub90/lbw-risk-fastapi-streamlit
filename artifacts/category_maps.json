@@ -1,0 +1,95 @@
+{
+  "measured_HB_risk_bin": [
+    "severe_anaemia",
+    "moderate_anaemia",
+    "mild_anaemia",
+    "normal"
+  ],
+  "Child order/parity": [
+    1,
+    2
+  ],
+  "MonthConception": [
+    "April",
+    "August",
+    "December",
+    "February",
+    "January",
+    "July",
+    "June",
+    "March",
+    "May",
+    "November",
+    "October",
+    "September"
+  ],
+  "consume_tobacco": [
+    "N",
+    "O",
+    "Y"
+  ],
+  "Status of current chewing of tobacco": [
+    "EVERY DAY",
+    "NOT AT ALL",
+    "SOME DAYS"
+  ],
+  "consume_alcohol": [
+    "N",
+    "O",
+    "Y"
+  ],
+  "RegistrationBucket": [
+    "Early",
+    "Late",
+    "Mid"
+  ],
+  "ANCBucket": [
+    "Early",
+    "Late",
+    "Mid"
+  ],
+  "Service received during last ANC: TT Injection given": [
+    "9999",
+    "No",
+    "Yes"
+  ],
+  "Food_Groups_Category": [
+    "<4",
+    ">4",
+    ">5",
+    ">6"
+  ],
+  "toilet_type_clean": [
+    "Improved toilet",
+    "Pit latrine (basic)",
+    "Unimproved / unknown",
+    "No facility / open defecation"
+  ],
+  "water_source_clean": [
+    "Piped supply (home/yard/stand)",
+    "Groundwater \u2013 handpump/borewell",
+    "Protected well",
+    "Surface/Unprotected source",
+    "Delivered / other"
+  ],
+  "education_clean": [
+    "No schooling",
+    "Primary (1\u20135)",
+    "Middle (6\u20138)",
+    "Secondary (9\u201312)",
+    "Graduate & above"
+  ],
+  "Social_Media_Category": [
+    "High",
+    "Low",
+    "Medium"
+  ],
+  "Registered for cash transfer scheme: JSY": [
+    "No",
+    "Yes"
+  ],
+  "Registered for cash transfer scheme: RAJHSRI": [
+    "No",
+    "Yes"
+  ]
+}
