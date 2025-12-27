@@ -1,7 +1,33 @@
-import pandas as pd
+# preprocessing.py
 import numpy as np
+import pandas as pd
 
-CATEGORICAL_COLS = [
+# --------------------------------
+# Expected dtypes from training
+# --------------------------------
+INT_COLS = [
+    "Beneficiary age",
+    "Number of living child at now",
+    "No of ANCs completed",
+]
+
+FLOAT_COLS = [
+    "BMI_PW1_Prog",
+    "BMI_PW2_Prog",
+    "BMI_PW3_Prog",
+    "BMI_PW4_Prog",
+    "counselling_gap_days",
+    "LMPtoINST1",
+    "LMPtoINST2",
+    "LMPtoINST3",
+    "No. of IFA tablets received/procured in last one month_log1p",
+    "No. of calcium tablets consumed in last one month_log1p",
+    "Household_Assets_Score_log1p",
+    "PMMVY-Number of installment received",
+    "JSY-Number of installment received",
+]
+
+CAT_COLS = [
     "measured_HB_risk_bin",
     "Child order/parity",
     "MonthConception",
@@ -20,41 +46,27 @@ CATEGORICAL_COLS = [
     "Registered for cash transfer scheme: RAJHSRI",
 ]
 
-NUMERIC_COLS = [
-    "Beneficiary age",
-    "Number of living child at now",
-    "BMI_PW1_Prog",
-    "BMI_PW2_Prog",
-    "BMI_PW3_Prog",
-    "BMI_PW4_Prog",
-    "counselling_gap_days",
-    "LMPtoINST1",
-    "LMPtoINST2",
-    "LMPtoINST3",
-    "No of ANCs completed",
-    "No. of IFA tablets received/procured in last one month_log1p",
-    "No. of calcium tablets consumed in last one month_log1p",
-    "Household_Assets_Score_log1p",
-    "PMMVY-Number of installment received",
-    "JSY-Number of installment received",
-]
-
+# --------------------------------
 def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # numeric coercion
-    for col in NUMERIC_COLS:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    # ---- integers ----
+    for col in INT_COLS:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype("int64")
 
-    # categorical coercion
-    for col in CATEGORICAL_COLS:
-        if col in df.columns:
-            df[col] = df[col].astype("category")
+    # ---- floats ----
+    for col in FLOAT_COLS:
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")
 
-    # 🚨 hard safety check
-    bad = df.select_dtypes(include=["object"]).columns.tolist()
-    if bad:
-        raise ValueError(f"❌ Object dtype columns found: {bad}")
+    # ---- categoricals ----
+    for col in CAT_COLS:
+        df[col] = df[col].astype("category")
+
+    # ---- FINAL SAFETY CHECK ----
+    bad_cols = [c for c in df.columns if df[c].dtype == "object"]
+    if bad_cols:
+        raise ValueError(
+            f"❌ Object dtype columns found (XGBoost will fail): {bad_cols}"
+        )
 
     return df
