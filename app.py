@@ -33,10 +33,11 @@ def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
 # =========================
 from preprocessing import preprocess_for_model
 
+# Load once (top of app.py)
 model = joblib.load("artifacts/xgb_model.pkl")
 
 with open("artifacts/features.json") as f:
-    features_order = json.load(f)
+    FEATURES_ORDER = json.load(f)
 
 # =====================================================
 # APP CONFIG
@@ -436,15 +437,14 @@ LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
 LMPtoINST3 = None
 
 # =====================================================
-# ✅ SUBMIT / PREDICT
+# ✅ PREDICT BUTTON
 # =====================================================
-clicked = st.button("Predict Score")
+if st.button("Predict Score"):
 
-if clicked:
     form_end_time = datetime.now()
 
     # -------------------------
-    # 1️⃣ BUILD RECORD
+    # 1️⃣ BUILD RECORD (unchanged)
     # -------------------------
     record = {
         "Beneficiary age": beneficiary_age,
@@ -485,21 +485,24 @@ if clicked:
     # 2️⃣ MODEL INPUT
     # -------------------------
     X_raw = pd.DataFrame(
-    [{k: record.get(k, np.nan) for k in features_order}]
-    )
+        [{k: record.get(k, None) for k in FEATURES_ORDER}]
+    ).replace({None: np.nan})
 
+    # -------------------------
+    # 3️⃣ PREPROCESS (CRITICAL)
+    # -------------------------
     X_processed = preprocess_for_model(X_raw)
 
-    # Debug ONCE
-    st.write("Model input dtypes:", X_processed.dtypes)
-
+    # -------------------------
+    # 4️⃣ PREDICTION
+    # -------------------------
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
 
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
     # -------------------------
-    # 4️⃣ SAVE RESULT
+    # 5️⃣ SAVE RESULTS
     # -------------------------
     record["LBW_Risk_Probability"] = lbw_prob
     record["LBW_Risk_Percentage"] = lbw_percent
