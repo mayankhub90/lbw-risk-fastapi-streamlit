@@ -1,72 +1,52 @@
 # preprocessing.py
+import json
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
-# --------------------------------
-# Expected dtypes from training
-# --------------------------------
-INT_COLS = [
-    "Beneficiary age",
-    "Number of living child at now",
-    "No of ANCs completed",
-]
+ARTIFACTS_DIR = Path("artifacts")
 
-FLOAT_COLS = [
-    "BMI_PW1_Prog",
-    "BMI_PW2_Prog",
-    "BMI_PW3_Prog",
-    "BMI_PW4_Prog",
-    "counselling_gap_days",
-    "LMPtoINST1",
-    "LMPtoINST2",
-    "LMPtoINST3",
-    "No. of IFA tablets received/procured in last one month_log1p",
-    "No. of calcium tablets consumed in last one month_log1p",
-    "Household_Assets_Score_log1p",
-    "PMMVY-Number of installment received",
-    "JSY-Number of installment received",
-]
+with open(ARTIFACTS_DIR / "features.json") as f:
+    FEATURES = json.load(f)
 
-CAT_COLS = [
-    "measured_HB_risk_bin",
-    "Child order/parity",
-    "MonthConception",
-    "consume_tobacco",
-    "Status of current chewing of tobacco",
-    "consume_alcohol",
-    "RegistrationBucket",
-    "ANCBucket",
-    "Service received during last ANC: TT Injection given",
-    "Food_Groups_Category",
-    "toilet_type_clean",
-    "water_source_clean",
-    "education_clean",
-    "Social_Media_Category",
-    "Registered for cash transfer scheme: JSY",
-    "Registered for cash transfer scheme: RAJHSRI",
-]
+with open(ARTIFACTS_DIR / "dtypes.json") as f:
+    DTYPES = json.load(f)
 
-# --------------------------------
+with open(ARTIFACTS_DIR / "category_maps.json") as f:
+    CATEGORY_MAPS = json.load(f)
+
+
 def preprocess_for_model(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
+    """
+    Strict preprocessing to EXACTLY match XGBoost training data:
+    - column order
+    - dtypes
+    - categorical universes
+    """
 
-    # ---- integers ----
-    for col in INT_COLS:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype("int64")
+    # 1️⃣ Enforce feature order
+    df = df[FEATURES].copy()
 
-    # ---- floats ----
-    for col in FLOAT_COLS:
-        df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")
+    # 2️⃣ Coerce numeric columns
+    for col, dtype in DTYPES.items():
+        if dtype.startswith("int"):
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+        elif dtype.startswith("float"):
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
 
-    # ---- categoricals ----
-    for col in CAT_COLS:
-        df[col] = df[col].astype("category")
+    # 3️⃣ Apply categorical dtype WITH TRAINED CATEGORIES
+    for col, categories in CATEGORY_MAPS.items():
+        df[col] = pd.Categorical(
+            df[col],
+            categories=categories,
+            ordered=True
+        )
 
-    # ---- FINAL SAFETY CHECK ----
-    bad_cols = [c for c in df.columns if df[c].dtype == "object"]
-    if bad_cols:
+    # 4️⃣ Final sanity check (THIS SAVES YOU FROM SILENT MODEL FAILURE)
+    bad_object_cols = [c for c in df.columns if df[c].dtype == "object"]
+    if bad_object_cols:
         raise ValueError(
-            f"❌ Object dtype columns found (XGBoost will fail): {bad_cols}"
+            f"❌ Object dtype columns found (model will fail): {bad_object_cols}"
         )
 
     return df
