@@ -440,7 +440,6 @@ LMPtoINST3 = None
 # =====================================================
 if st.button("Predict Score"):
     form_end_time = datetime.now()
-
     # -------------------------
     # 1️⃣ BUILD RECORD
     # -------------------------
