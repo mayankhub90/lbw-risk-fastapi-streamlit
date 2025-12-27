@@ -508,7 +508,7 @@ if st.button("Predict Score"):
     record["LBW_Risk_Percentage"] = lbw_percent
     record["form_end_time"] = form_end_time.isoformat()
 
-    worksheet = get_gsheet("LBW_Beneficiary_Data")
+    worksheet = get_gsheet("12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc")
     safe_row = [make_json_safe(v) for v in record.values()]
     worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
 
