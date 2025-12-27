@@ -509,7 +509,23 @@ if st.button("Predict Score"):
     record["form_end_time"] = form_end_time.isoformat()
 
     worksheet = get_gsheet("12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc")
-    safe_row = [make_json_safe(v) for v in record.values()]
-    worksheet.append_row(safe_row, value_input_option="USER_ENTERED")
+    # =========================
+    # SAVE TO GOOGLE SHEETS (SAFE WAY)
+    # =========================
 
+    # 1️⃣ Read sheet header
+    sheet_headers = worksheet.row_values(1)
+
+    # 2️⃣ Align record with header
+    row_to_append = []
+    for col in sheet_headers:
+        value = record.get(col, "")
+        row_to_append.append(make_json_safe(value))
+
+    # 3️⃣ Append aligned row
+    worksheet.append_row(
+        row_to_append,
+        value_input_option="USER_ENTERED"
+    )
+    
     st.success("✅ Saved & Predicted Successfully")
