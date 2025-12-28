@@ -219,7 +219,6 @@ LMPtoINST3 = st.number_input("LMPtoINST3", value=np.nan)
 # PREDICT & SAVE
 # =========================
 if st.button("Predict Score"):
-
     form_end_time = datetime.now()
 
     record = {
