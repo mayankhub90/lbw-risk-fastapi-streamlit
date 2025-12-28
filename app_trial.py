@@ -282,6 +282,13 @@ if st.button("Predict Score"):
     record["lbw_prob"] = lbw_prob
     record["lbw_percent"] = lbw_percent
 
+    record["form_start_time"] = st.session_state.form_start_time.isoformat()
+    record["form_end_time"] = form_end_time.isoformat()
+    record["form_duration_seconds"] = int(
+        (form_end_time - st.session_state.form_start_time).total_seconds()
+    )
+
+
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
     # Save to Google Sheet
