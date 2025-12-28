@@ -529,5 +529,5 @@ if st.button("Predict Score"):
     )
     
     st.success("✅ Saved & Predicted Successfully")
-    st.write("Saved row:", worksheet.row_values(worksheet.row_count))
+ 
 
