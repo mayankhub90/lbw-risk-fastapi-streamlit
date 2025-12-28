@@ -11,17 +11,6 @@ import numpy as np
 import gspread
 from google.oauth2.service_account import Credentials
 
-type = "service_account"
-project_id = "lbwprediction"
-private_key_id = "360f56b5160de290538b222b3557fb173c464ff0"
-private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCgFHZAc7gPCyiq\nVTl7MNqL0UVlYpLG6FWqR75G0v20tVxz8fxEyPIq3hyawBN5vIFS9RtlFX88wx78\n2/UiIQZq98XYTcoSR+9tPe0llrddA6or9CyNmgR1SgYFIJ+nTQFgTbJsaUMUY2Np\nwMEzSnxH9suLcT6oqGQs2CbjeXnBL87Nbm3km8Kyp8uWNqj7vlHqf11Gqkhx00tM\ndpEpdR2Jfyf5bYsxb5Fvss6cY2U12WKyGNrheErZ/qPKCpsKVsjf3bAYVZAp31TA\n82s5LUAimHro5PwF7doHqCzKlLEY3Pyml6mGsQAhPnCHpa42V9agxd2+4kGZjtAF\nqGEBEzdVAgMBAAECggEAH3vWxBdeUGsf7NxFKWLy4MPgc6++8Wr5ijuBA1n09wki\nbVVfCcJByseTdaYoTm2SO9gkMq3XMAKqQg4auMMpCXnAyimGgDDwuJoQ3a82Ug9p\n9SoZZyIvFUhhRbnkXJmrFx9A48ySGlzvzPlRpj5UkizKXJsBuVchGKbMgzm9hg6K\ngO0lUUiNytYvRsVmC0FGYpc1id90X6q1n88nEyTKabzrPHfSbtm5hoa1TUOhMp9c\nucGd1TPKVr0BObDqDcMDXUIMh84wDsiNPGHFyxPp0EEGo8g3ukeoZMDarEw8Wyfp\nVcJs8C+DQxBq4e0JbOIb8DNknr2an2xCY4W0ajk7kQKBgQDgMJpVYHFAMLTTMagK\n20JWWVxD/I1qvnFoBZ524IMckCK1Socw9hc3IsKgD01dk9/z0p3rqTJoNt2cTelR\nccWjM4wYwhPWBjB1iEj6KfYR+PJ0SLiqfFSXTrg4TJu+RYEH82BUEFcBio8W+7Rq\n/syU5yRE4DuM3GlUxRNo230jrQKBgQC2yybQATRPTEFHzGhPKnphjnbC30KRRc6P\n5jvv2w5vEtsxOSHRkuttRdpjPkS+cwqThjo5ohSon08Ra+aVQ2vGpGVWWq5zG0yt\nnAz6qQkvIe+Itb7BIJXSOxKLbwJHu+19CxYm4sEqBfuv5WDx0+FRjFx0Rd/8+7EC\ndhN0xt2XSQKBgQChiMObIrtXKgEQbyYKdINu3kJJxk5LDF+AORQ9yXUO/pfTkpio\nYZjGpGghlgUDmQnzj90zsRzd1DKHbefgRB7Igdq++A/81UbTWNhkUBm6R2rC+Kb+\nSElXIGRCRIivZzsadHUC/ScDuEdzovcTZPYZkBYk/oBJ9YJ7juh2VDftnQKBgHB7\nQj7s/sttGR6dYfKVKQmvKNVxnPzX/+v8uRU3rwIakFcR2QWlasmrGl/HiXXIRNHS\n3zFn016P6Y/G3fUrr75kmxcwZfje66hJRpNYQRaHw2ZUsDUXYBolz5uNi9GoitNP\nZyo2jrbVR7NNawJkZ1pPDPVfqh16o8nn7sEFPoZBAoGAIYhQwaJ83Qa4H5OV88A8\nwWJw7bly+uL4EKK9t0w0KnsATlS131hQv+/k5Hr4Lm8ZKcR2M7zzOpfWyvBJUEZx\ngM/kMVOwl2+unGIrUyx+Z0gQC6crdUQ0VmUiOawgzyYo6OkcGYmP1W2Ksmf6M+4I\nHytY6J0oKSV/EMuP/6zlwLA=\n-----END PRIVATE KEY-----\n"
-client_email = "lbw-prediction@lbwprediction.iam.gserviceaccount.com"
-client_id = "114146923802475677256"
-auth_uri = "https://accounts.google.com/o/oauth2/auth"
-token_uri = "https://oauth2.googleapis.com/token"
-auth_provider_x509_cert_url = https://www.googleapis.com/oauth2/v1/certs"
-client_x509_cert_url = https://www.googleapis.com/robot/v1/metadata/x509/lbw-prediction%40lbwprediction.iam.gserviceaccount.com"
-
 # 🔴 REPLACE THIS WITH YOUR ACTUAL SPREADSHEET ID
 GSHEET_ID = "12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc"
 GSHEET_WORKSHEET = "LBWScores"
@@ -39,6 +28,14 @@ def get_gsheet(spreadsheet_id=GSHEET_ID, worksheet_name=GSHEET_WORKSHEET):
     worksheet = spreadsheet.worksheet(worksheet_name)
     return worksheet
 
+#JSON safe Values
+def make_json_safe(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if value is None:
+        return ""
+    return value
+    
 # =========================
 # LOAD MODEL & FEATURES
 # =========================
@@ -57,16 +54,6 @@ st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
 st.title("📋 Beneficiary Data Entry Form")
 
 CSV_PATH = "beneficiary_records.csv"
-
-#JSON safe Values
-def make_json_safe(value):
-    if isinstance(value, (datetime, date)):
-        return value.isoformat()
-    if value is None:
-        return ""
-    return value
-
-
 
 # =====================================================
 # SESSION: FORM START TIME
