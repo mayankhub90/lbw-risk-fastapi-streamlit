@@ -436,17 +436,22 @@ LMPtoINST1 = (pmmvy_inst1_date - lmp_date).days if pmmvy_inst1_date else None
 LMPtoINST2 = (pmmvy_inst2_date - lmp_date).days if pmmvy_inst2_date else None
 LMPtoINST3 = None
 
-# =====================================================
-# ✅ PREDICT BUTTON
-# =====================================================
 if st.button("Predict Score"):
 
     form_end_time = datetime.now()
 
-    # -------------------------
-    # 1️⃣ BUILD RECORD (unchanged)
-    # -------------------------
+    # =========================
+    # 1️⃣ BUILD RECORD (FULL)
+    # =========================
     record = {
+        # ---- IDENTIFICATION ----
+        "Beneficiary Name": beneficiary_name,
+        "State": state,
+        "District": district,
+        "Block": block,
+        "Village": village,
+
+        # ---- MODEL FEATURES ----
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
@@ -479,77 +484,57 @@ if st.button("Predict Score"):
         "Registered for cash transfer scheme: RAJHSRI": rajhsri_reg,
         "PMMVY-Number of installment received": pmmvy_inst,
         "JSY-Number of installment received": jsy_inst,
+
+        # ---- RAW / AUDIT FIELDS ----
+        "height": height_cm,
+        "LMP": lmp_date.isoformat(),
+        "Registration Date": registration_date.isoformat(),
+        "Type of Social Media Enrolled In": Type_of_Social_Media_Enrolled_In,
+        "form_start_time": st.session_state.form_start_time.isoformat(),
+        "form_end_time": form_end_time.isoformat(),
+        "form_duration_seconds": int(
+            (form_end_time - st.session_state.form_start_time).total_seconds()
+        ),
     }
 
-    # -------------------------
+    # =========================
     # 2️⃣ MODEL INPUT
-    # -------------------------
+    # =========================
     X_raw = pd.DataFrame(
         [{k: record.get(k, None) for k in FEATURES_ORDER}]
     ).replace({None: np.nan})
 
-    # -------------------------
-    # 3️⃣ PREPROCESS (CRITICAL)
-    # -------------------------
     X_processed = preprocess_for_model(X_raw)
 
-    # -------------------------
-    # 4️⃣ PREDICTION
-    # -------------------------
+    # =========================
+    # 3️⃣ PREDICTION
+    # =========================
     lbw_prob = float(model.predict_proba(X_processed)[0][1])
     lbw_percent = round(lbw_prob * 100, 2)
 
+    record["lbw_prob"] = lbw_prob
+    record["lbw_percent"] = lbw_percent
+
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
 
-    # -------------------------
-    # 5️⃣ SAVE RESULTS
-    # -------------------------
-    record["LBW_Risk_Probability"] = lbw_prob
-    record["LBW_Risk_Percentage"] = lbw_percent
-    record["form_end_time"] = form_end_time.isoformat()
-    record["form_start_time"] = form_start_time.isoformat()
-    record["State"] = State
+    # =========================
+    # 4️⃣ SAVE TO GOOGLE SHEET
+    # =========================
+    worksheet = get_gsheet()
 
-# =========================
-# SAVE TO GOOGLE SHEET (ROBUST VERSION)
-# =========================
+    sheet_headers = [
+        h.strip().replace("\n", "").replace("\r", "")
+        for h in worksheet.row_values(1)
+    ]
 
-worksheet = get_gsheet("12qNkt1RnQHFHuGwnCX15YW1UsQHtMzgNyRwzq1Qbsc")
+    row_to_append = [
+        make_json_safe(record.get(col, ""))
+        for col in sheet_headers
+    ]
 
-# 1️⃣ Read and CLEAN headers from Google Sheet
-raw_headers = worksheet.row_values(1)
+    worksheet.append_row(
+        row_to_append,
+        value_input_option="USER_ENTERED"
+    )
 
-sheet_headers = [
-    h.strip().replace("\n", "").replace("\r", "")
-    for h in raw_headers
-]
-
-# 2️⃣ Debug once (REMOVE after verification)
-st.write("📋 Sheet headers:", sheet_headers)
-st.write("📦 Record keys:", list(record.keys()))
-
-# 3️⃣ Align record values to headers
-row_to_append = []
-missing_cols = []
-
-for col in sheet_headers:
-    if col in record:
-        value = record[col]
-    else:
-        value = ""
-        missing_cols.append(col)
-
-    row_to_append.append(make_json_safe(value))
-
-# 4️⃣ Warn if any column mismatches
-if missing_cols:
-    st.warning(f"⚠️ These sheet columns were not found in record: {missing_cols}")
-
-# 5️⃣ Append row
-worksheet.append_row(
-    row_to_append,
-    value_input_option="USER_ENTERED"
-)
-
-st.success("✅ Saved & Predicted Successfully")
-st.success("✅ Saved & Predicted Successfully1")
+    st.success("✅ Saved & Predicted Successfully")
