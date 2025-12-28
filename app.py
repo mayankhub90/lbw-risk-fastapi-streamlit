@@ -507,6 +507,8 @@ if st.button("Predict Score"):
     record["LBW_Risk_Probability"] = lbw_prob
     record["LBW_Risk_Percentage"] = lbw_percent
     record["form_end_time"] = form_end_time.isoformat()
+    record["form_start_time"] = form_start_time.isoformat()
+    record["State"] = State
 
 # =========================
 # SAVE TO GOOGLE SHEET (ROBUST VERSION)
