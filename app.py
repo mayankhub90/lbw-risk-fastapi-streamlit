@@ -195,6 +195,12 @@ registration_bucket = (
     "Late"
 )
 
+lmp_date = st.date_input(
+    "Last Menstrual Period (LMP)",
+    value=pd.to_datetime(get_val("LMP", date.today()))
+)
+month_conception = lmp_date.strftime("%B")
+
 # =====================================================
 # 🏥 ANC & BMI
 # =====================================================
