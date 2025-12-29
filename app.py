@@ -173,7 +173,7 @@ with c2:
     )
 
 # STRICT RULE
-if lmp_date >= registration_date:
+if lmp_date >= registration_date+1:
     st.error("❌ LMP date must be strictly earlier than Registration Date")
     st.stop()
 
