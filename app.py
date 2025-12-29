@@ -71,7 +71,7 @@ if os.path.exists(CSV_PATH):
 else:
     existing_df = pd.DataFrame()
 
-# edit_mode = st.checkbox("✏️ Edit existing beneficiary")
+edit_mode = st.checkbox("✏️ Edit existing beneficiary")
 
 selected_index = None
 selected_record = {}
