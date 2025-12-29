@@ -442,12 +442,6 @@ if st.button("Predict Score"):
     # 1️⃣ BUILD RECORD (unchanged)
     # -------------------------
     record = {
-        # Identification
-        "Beneficiary Name": beneficiary_name,
-        "State": state,
-        "District": district,
-        "Block": block,
-        "Village": village,
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
