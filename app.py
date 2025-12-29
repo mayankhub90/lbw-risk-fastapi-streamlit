@@ -155,14 +155,14 @@ with c2:
     living_children = st.number_input("Number of living child at now", 0, 10,
                                       value=int(get_val("Number of living child at now", 0)))
 
-month_conception = st.selectbox(
-    "Month of Conception",
-    ["January","February","March","April","May","June",
-     "July","August","September","October","November","December"],
-    index=["January","February","March","April","May","June",
-           "July","August","September","October","November","December"]
-           .index(get_val("MonthConception", "January"))
+lmp_date = st.date_input(
+    "Last Menstrual Period (LMP)",
+    value=pd.to_datetime(get_val("LMP", date.today()))
 )
+
+month_conception = lmp_date.strftime("%B")
+st.info(f"📅 **Month of Conception (auto-derived from LMP):** {month_conception}")
+
 
 # =====================================================
 # 🤰 PREGNANCY & REGISTRATION DETAILS
