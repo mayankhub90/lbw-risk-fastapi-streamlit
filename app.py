@@ -495,7 +495,7 @@ if st.button("Predict Score"):
     lbw_percent = round(lbw_prob * 100, 2)
 
     # Risk categorisation
-    if lbw_percent < 20:
+    if lbw_percent < 30:
         risk_category = "No Risk"
     elif lbw_percent < 50:
         risk_category = "Mild Risk"
