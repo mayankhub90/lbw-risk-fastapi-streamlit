@@ -186,7 +186,7 @@ registration_bucket = (
 
 month_conception = lmp_date.strftime("%B")
 
-st.info(f"🧪 **Month of Conception:** {month_conception}")
+st.info(f"🗓️ **Month of Conception:** {month_conception}")
 
 # =====================================================
 # 🏥 ANC & BMI
