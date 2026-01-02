@@ -288,7 +288,7 @@ consume_tobacco = YN_MAP[consume_tobacco_ui]   # <-- saved value (N/Y/O)
 chewing_status = (
     st.selectbox(
         "Chewing tobacco status",
-        ["EVERY DAY", "SOME DAYS", "NOT AT ALL"]
+        ["EVERY DAY", "SOME DAYS"]
     )
     if consume_tobacco == "Y"
     else None
