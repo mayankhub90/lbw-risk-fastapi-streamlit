@@ -172,10 +172,21 @@ with c2:
         value=pd.to_datetime(get_val("Registration Date", date.today()))
     )
 
-# STRICT RULE
-if lmp_date >= registration_date:
-    st.error("❌ LMP date must be strictly earlier than Registration Date")
+# =====================================================
+# ❗ DATE VALIDATIONS (CRITICAL)
+# =====================================================
+today = date.today()
+
+# 1️⃣ Registration date cannot be in the future
+if registration_date > today:
+    st.error("❌ Registration Date cannot be later than today.")
     st.stop()
+
+# 2️⃣ LMP must be strictly before Registration Date
+if lmp_date >= registration_date:
+    st.error("❌ LMP date must be strictly earlier than Registration Date.")
+    st.stop()
+
 
 days_gap = (registration_date - lmp_date).days
 registration_bucket = (
