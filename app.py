@@ -408,13 +408,13 @@ Type_of_Social_Media_Enrolled_In = ",".join(
 st.header("💰 Scheme Participation")
 
 jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
-# rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
+rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
 
-pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
 jsy_inst_ui = st.selectbox("JSY installments", ["0","1","NA"])
+pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
 
-pmmvy_inst = 98 if pmmvy_inst_ui == "NA" else int(pmmvy_inst_ui)
 jsy_inst = 98 if jsy_inst_ui == "NA" else int(jsy_inst_ui)
+pmmvy_inst = 98 if pmmvy_inst_ui == "NA" else int(pmmvy_inst_ui)
 
 # ---- CONDITIONAL DATE ASKING ----
 pmmvy_inst1_date = None
