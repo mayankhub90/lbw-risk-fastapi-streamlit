@@ -407,8 +407,8 @@ Type_of_Social_Media_Enrolled_In = ",".join(
 # =====================================================
 st.header("💰 Scheme Participation")
 
-jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
 rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
+jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
 
 jsy_inst_ui = st.selectbox("JSY installments", ["0","1","NA"])
 pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
