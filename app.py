@@ -572,7 +572,7 @@ if st.button("Predict Score"):
     if risk_category == "No Risk":
         color = "green"
     elif risk_category == "Mild Risk":
-        color = "yellow"
+        color = "orange"
     else:
         color = "red"
 
