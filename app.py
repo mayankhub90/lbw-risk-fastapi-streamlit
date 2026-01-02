@@ -482,7 +482,7 @@ if st.button("Predict Score"):
     # -------------------------
     # 1️⃣ BUILD RECORD (unchanged)
     # -------------------------
-    record = {
+    model_record = {
         "Beneficiary age": beneficiary_age,
         "measured_HB_risk_bin": measured_HB_risk_bin,
         "Child order/parity": parity,
@@ -517,6 +517,29 @@ if st.button("Predict Score"):
         "JSY-Number of installment received": jsy_inst,
     }
 
+    full_record = {
+    # Identification
+    "Beneficiary Name": beneficiary_name,
+    "State": state,
+    "District": district,
+    "Block": block,
+    "Village": village,
+
+    # Physical & raw
+    "height": height_cm,
+    "LMP": lmp_date.isoformat(),
+    "Registration Date": registration_date.isoformat(),
+    "Type of Social Media Enrolled In": Type_of_Social_Media_Enrolled_In,
+
+    # Timing / audit
+    "form_start_time": st.session_state.form_start_time.isoformat(),
+    "form_end_time": form_end_time.isoformat(),
+    "form_duration_seconds": int(
+        (form_end_time - st.session_state.form_start_time).total_seconds()
+    ),
+    }
+
+
     # -------------------------
     # 2️⃣ MODEL INPUT
     # -------------------------
@@ -550,9 +573,13 @@ if st.button("Predict Score"):
     # -------------------------
     # 5️⃣ SAVE RESULTS
     # -------------------------
-    record["LBW_Risk_Probability"] = lbw_prob
-    record["LBW_Risk_Percentage"] = lbw_percent
-    record["form_end_time"] = form_end_time.isoformat()
+    final_record = {
+    **full_record,
+    **model_record,
+    "lbw_prob": lbw_prob,
+    "lbw_percent": lbw_percent
+    }
+
 
     worksheet = get_gsheet("12qNktlRnQHFHujGwnCX15YW1UsQHtMzgNyRWzq1Qbsc")
     # =========================
@@ -565,7 +592,7 @@ if st.button("Predict Score"):
     # 2️⃣ Align record with header
     row_to_append = []
     for col in sheet_headers:
-        value = record.get(col, "")
+        value = final_record.get(col, "")
         row_to_append.append(make_json_safe(value))
 
     # 3️⃣ Append aligned row
