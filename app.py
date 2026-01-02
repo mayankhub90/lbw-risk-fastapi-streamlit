@@ -544,7 +544,7 @@ if st.button("Predict Score"):
     # 2️⃣ MODEL INPUT
     # -------------------------
     X_raw = pd.DataFrame(
-        [{k: record.get(k, None) for k in FEATURES_ORDER}]
+        [{k: model_record.get(k, None) for k in FEATURES_ORDER}]
     ).replace({None: np.nan})
 
     # -------------------------
