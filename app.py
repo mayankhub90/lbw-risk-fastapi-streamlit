@@ -566,8 +566,36 @@ if st.button("Predict Score"):
     else:
         risk_category = "High Risk"
 
-    st.markdown(f"⚠️ **Risk Category:** {risk_category}")
+    # -------------------------
+    # 🎨 COLOURED RISK CATEGORY
+    # -------------------------
+    if risk_category == "No Risk":
+        color = "green"
+    elif risk_category == "Mild Risk":
+        color = "orange"
+    else:
+        color = "red"
+
+    st.markdown(
+        f"""
+        <div style="
+            padding: 12px;
+            border-radius: 8px;
+            background-color: {color}20;
+            border: 2px solid {color};
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            color: {color};
+        ">
+            ⚠️ Risk Category: {risk_category}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.metric("Predicted LBW Risk", f"{lbw_percent}%")
+
     
 
     # -------------------------
