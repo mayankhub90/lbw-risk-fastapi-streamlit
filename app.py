@@ -238,40 +238,41 @@ anc_block(3, col_right)
 anc_block(4, col_right)
 
 # =====================================================
-# ❗ ANC DATE VALIDATIONS (FINAL & STRICT)
+# ❗ FINAL ANC DATE VALIDATION (STRICT, NO SAME-DAY)
 # =====================================================
 today = date.today()
 
-# Extract ANC dates in order
-anc_dates_ordered = []
-for i in [1, 2, 3, 4]:
-    if anc.get(i, {}).get("done"):
-        anc_dates_ordered.append((i, anc[i]["date"]))
+# Collect completed ANC dates in order
+anc_dates_ordered = [
+    (i, anc[i]["date"])
+    for i in [1, 2, 3, 4]
+    if anc.get(i, {}).get("done")
+]
 
-# 1️⃣ ANC date cannot be in the future
+# 1️⃣ Global rules: Registration Date ≤ ANC Date ≤ Today
 for i, d in anc_dates_ordered:
     if d > today:
         st.error(f"❌ ANC {i} date cannot be later than today.")
         st.stop()
 
-# 2️⃣ ANC date cannot be before registration date
-for i, d in anc_dates_ordered:
     if d < registration_date:
         st.error(
             f"❌ ANC {i} date cannot be earlier than the Registration Date."
         )
         st.stop()
 
-# 3️⃣ Sequential ANC order validation (ANC2 ≥ ANC1 ≥ Registration)
+# 2️⃣ Sequential rules: STRICTLY increasing dates (no same-day)
 for idx in range(1, len(anc_dates_ordered)):
     prev_i, prev_date = anc_dates_ordered[idx - 1]
     curr_i, curr_date = anc_dates_ordered[idx]
 
-    if curr_date < prev_date:
+    if curr_date <= prev_date:
         st.error(
-            f"❌ ANC {curr_i} date cannot be earlier than ANC {prev_i} date."
+            f"❌ ANC {curr_i} date must be later than ANC {prev_i} date "
+            "(same-day ANC is not allowed)."
         )
         st.stop()
+
 
 BMI_PW1_Prog = anc[1]["bmi"] if anc[1]["done"] else None
 BMI_PW2_Prog = anc[2]["bmi"] if anc[2]["done"] else None
