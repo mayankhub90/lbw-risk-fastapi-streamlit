@@ -275,7 +275,6 @@ st.header("🚬 Tobacco & Alcohol")
 YN_MAP = {
     "No": "N",
     "Yes": "Y",
-    "Other": "O"
 }
 
 # ---- Tobacco ----
@@ -299,7 +298,7 @@ consume_alcohol_ui = st.selectbox(
     "Consume alcohol?",
     list(YN_MAP.keys())
 )
-consume_alcohol = YN_MAP[consume_alcohol_ui]   # <-- saved value (N/Y/O)
+consume_alcohol = YN_MAP[consume_alcohol_ui]   # <-- saved value (N/Y)
 
 
 # =====================================================
@@ -409,7 +408,7 @@ Type_of_Social_Media_Enrolled_In = ",".join(
 st.header("💰 Scheme Participation")
 
 jsy_reg = st.selectbox("Registered for JSY", ["No","Yes"])
-rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
+# rajhsri_reg = st.selectbox("Registered for RAJSHRI", ["No","Yes"])
 
 pmmvy_inst_ui = st.selectbox("PMMVY installments", ["0","1","2","NA"])
 jsy_inst_ui = st.selectbox("JSY installments", ["0","1","NA"])
