@@ -354,7 +354,7 @@ calcium_tabs = st.number_input("Calcium tablets last month", min_value=0)
 ifa_tabs_log1p = round(math.log1p(ifa_tabs), 4)
 calcium_tabs_log1p = round(math.log1p(calcium_tabs), 4)
 
-food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5])
+food_group = st.selectbox("Food groups consumed", [0,1,2,3,4,5,6,7,8,9,10])
 
 # =====================================================
 # 🏠 SES
