@@ -6,6 +6,10 @@ from datetime import datetime, date
 import json
 import joblib
 import numpy as np
+from zoneinfo import ZoneInfo
+
+IST = ZoneInfo("Asia/Kolkata")
+
 
 # ================= GOOGLE SHEET SETUP =================
 import gspread
@@ -61,7 +65,7 @@ def make_json_safe(value):
 # SESSION: FORM START TIME
 # =====================================================
 if "form_start_time" not in st.session_state:
-    st.session_state.form_start_time = datetime.now()
+    st.session_state.form_start_time = datetime.now(IST)
 
 # =====================================================
 # LOAD EXISTING DATA (EDIT MODE)
@@ -487,7 +491,7 @@ LMPtoINST3 = None
 # =====================================================
 if st.button("Predict Score"):
 
-    form_end_time = datetime.now()
+    form_end_time = datetime.now(IST)
 
     # -------------------------
     # 1️⃣ BUILD RECORD (unchanged)
