@@ -88,6 +88,16 @@ def get_val(key, default=None):
     return selected_record.get(key, default) if edit_mode else default
 
 # =====================================================
+# 👤 DATA COLLECTOR DETAILS
+# =====================================================
+st.header("👤 Data Collector Details")
+
+data_collector_id = st.text_input(
+    "Data Collector Identifier",
+    value=get_val("Data Collector Identifier", "")
+)
+
+# =====================================================
 # 🤰 IDENTIFICATION DETAILS
 # =====================================================
 st.header("🤰 Identification Details")
@@ -518,6 +528,9 @@ if st.button("Predict Score"):
     }
 
     full_record = {
+    # 👤 Data collection
+    "Data Collector Identifier": data_collector_id,
+        
     # Identification
     "Beneficiary Name": beneficiary_name,
     "State": state,
