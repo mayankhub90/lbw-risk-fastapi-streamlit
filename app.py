@@ -47,7 +47,7 @@ with open("artifacts/features.json") as f:
 # APP CONFIG
 # =====================================================
 st.set_page_config(page_title="LBW Risk – Data Entry", layout="wide")
-st.title("📋 Beneficiary Data Entry Form")
+st.title("📋 LBW Risk Prediction Form")
 
 CSV_PATH = "beneficiary_records.csv"
 
