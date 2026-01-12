@@ -204,7 +204,7 @@ if lmp_date >= registration_date:
 
 days_gap = (registration_date - lmp_date).days
 registration_bucket = (
-    "Early" if days_gap < 84 else
+    "Early" if days_gap <= 84 else
     "Mid" if days_gap <= 168 else
     "Late"
 )
