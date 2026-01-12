@@ -316,7 +316,7 @@ ANCBucket, counselling_gap_days = None, None
 if valid_dates:
     first_anc = min(valid_dates)
     gap = (first_anc - lmp_date).days
-    ANCBucket = "Early" if gap < 84 else "Mid" if gap <= 168 else "Late"
+    ANCBucket = "Early" if gap <= 84 else "Mid" if gap <= 168 else "Late"
 
 if len(valid_dates) >= 2:
     valid_dates.sort()
