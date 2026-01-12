@@ -362,7 +362,7 @@ consume_alcohol = YN_MAP[consume_alcohol_ui]   # <-- saved value (N/Y)
 # =====================================================
 st.header("🥗 Nutrition")
 
-ifa_tabs = st.number_input("IFA tablets last month", min_value=0)
+ifa_tabs = st.number_input("IFA tablets received/procured last month", min_value=0)
 calcium_tabs = st.number_input("Calcium tablets last month", min_value=0)
 
 ifa_tabs_log1p = round(math.log1p(ifa_tabs), 4)
